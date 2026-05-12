@@ -18,6 +18,7 @@ import BeerMug from '../components/BeerMug';
 interface Props {
   onLogGame: () => void;
   onViewVerifications: () => void;
+  onViewGame?: (gameId: string) => void;
 }
 
 function StatCard({ label, value }: { label: string; value: string }) {
@@ -77,7 +78,7 @@ function BouncyLogButton({ onPress }: { onPress: () => void }) {
   );
 }
 
-export default function HomeScreen({ onLogGame, onViewVerifications }: Props) {
+export default function HomeScreen({ onLogGame, onViewVerifications, onViewGame }: Props) {
   const { user } = useAuth();
   const [profile, setProfile] = useState<User | null>(null);
   const [recentGames, setRecentGames] = useState<Game[]>([]);
@@ -156,7 +157,11 @@ export default function HomeScreen({ onLogGame, onViewVerifications }: Props) {
             <Text style={styles.sectionTitle}>Recent Games</Text>
           </>
         }
-        renderItem={({ item }) => <GameRow game={item} />}
+        renderItem={({ item }) => (
+          <TouchableOpacity onPress={() => onViewGame?.(item.id)} activeOpacity={0.75}>
+            <GameRow game={item} />
+          </TouchableOpacity>
+        )}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No games yet. Log your first game above.</Text>
         }

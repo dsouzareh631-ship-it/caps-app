@@ -35,7 +35,11 @@ const TAB_LABELS: Record<Tab, string> = {
   achievements: 'Achievements',
 };
 
-export default function LeaderboardScreen() {
+interface Props {
+  onViewPlayer?: (uid: string) => void;
+}
+
+export default function LeaderboardScreen({ onViewPlayer }: Props) {
   const [tab, setTab] = useState<Tab>('alltime');
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [achievements, setAchievements] = useState<Achievements | null>(null);
@@ -153,7 +157,7 @@ export default function LeaderboardScreen() {
           contentContainerStyle={{ padding: 16 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#c9a844" />}
           renderItem={({ item, index }) => (
-            <View style={[styles.row, index === 0 && styles.rowFirst]}>
+            <TouchableOpacity style={[styles.row, index === 0 && styles.rowFirst]} onPress={() => onViewPlayer?.(item.uid)} activeOpacity={0.75}>
               <Text style={[styles.rank, index === 0 && styles.rankFirst]}>
                 {index === 0 ? '🏆' : `#${index + 1}`}
               </Text>
@@ -172,7 +176,7 @@ export default function LeaderboardScreen() {
               <View style={styles.stats}>
                 <Text style={styles.record}>{item.totalWins}W-{item.totalLosses}L</Text>
               </View>
-            </View>
+            </TouchableOpacity>
           )}
           ListEmptyComponent={
             <Text style={styles.emptyText}>No games logged {tab === 'alltime' ? 'yet' : 'this ' + (tab === 'weekly' ? 'week' : 'month')}.</Text>

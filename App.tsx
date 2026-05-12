@@ -10,6 +10,7 @@ import LeaderboardScreen from './src/screens/LeaderboardScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import LogGameScreen from './src/screens/LogGameScreen';
 import VerificationsScreen from './src/screens/VerificationsScreen';
+import GameDetailScreen from './src/screens/GameDetailScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -32,9 +33,13 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
 function MainTabs({
   onLogGame,
   onViewVerifications,
+  onViewPlayer,
+  onViewGame,
 }: {
   onLogGame: () => void;
   onViewVerifications: () => void;
+  onViewPlayer: (uid: string) => void;
+  onViewGame: (gameId: string) => void;
 }) {
   return (
     <Tab.Navigator
@@ -55,11 +60,15 @@ function MainTabs({
     >
       <Tab.Screen name="Home">
         {() => (
-          <HomeScreen onLogGame={onLogGame} onViewVerifications={onViewVerifications} />
+          <HomeScreen onLogGame={onLogGame} onViewVerifications={onViewVerifications} onViewGame={onViewGame} />
         )}
       </Tab.Screen>
-      <Tab.Screen name="Leaderboard" component={LeaderboardScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Leaderboard">
+        {() => <LeaderboardScreen onViewPlayer={onViewPlayer} />}
+      </Tab.Screen>
+      <Tab.Screen name="Profile">
+        {() => <ProfileScreen onViewGame={onViewGame} />}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 }
@@ -75,6 +84,8 @@ function AuthFlow() {
 export default function App() {
   const { user, loading } = useAuth();
   const [modal, setModal] = useState<AppModal>(null);
+  const [viewingPlayer, setViewingPlayer] = useState<string | null>(null);
+  const [viewingGame, setViewingGame] = useState<string | null>(null);
 
   if (loading) {
     return (
@@ -105,11 +116,27 @@ export default function App() {
     return <VerificationsScreen onBack={() => setModal(null)} />;
   }
 
+  if (viewingGame) {
+    return <GameDetailScreen gameId={viewingGame} onBack={() => setViewingGame(null)} />;
+  }
+
+  if (viewingPlayer) {
+    return (
+      <ProfileScreen
+        uid={viewingPlayer}
+        onBack={() => setViewingPlayer(null)}
+        onViewGame={(gameId) => setViewingGame(gameId)}
+      />
+    );
+  }
+
   return (
     <NavigationContainer>
       <MainTabs
         onLogGame={() => setModal('logGame')}
         onViewVerifications={() => setModal('verifications')}
+        onViewPlayer={(uid) => setViewingPlayer(uid)}
+        onViewGame={(gameId) => setViewingGame(gameId)}
       />
     </NavigationContainer>
   );

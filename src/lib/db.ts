@@ -19,6 +19,28 @@ export async function updateUserProfile(uid: string, fields: { displayName: stri
   await updateDoc(doc(db, 'users', uid), fields);
 }
 
+export async function getGameById(gameId: string): Promise<Game | null> {
+  const snap = await getDoc(doc(db, 'games', gameId));
+  return snap.exists() ? ({ id: snap.id, ...snap.data() } as Game) : null;
+}
+
+export async function getHeadToHead(myUid: string, theirUid: string): Promise<{ wins: number; losses: number }> {
+  const snap = await getDocs(
+    query(
+      collection(db, 'games'),
+      where('userId', '==', myUid),
+      where('players', 'array-contains', theirUid),
+      where('status', '==', 'verified')
+    )
+  );
+  let wins = 0, losses = 0;
+  for (const d of snap.docs) {
+    const g = d.data() as Game;
+    if (g.result === 'win') wins++; else losses++;
+  }
+  return { wins, losses };
+}
+
 export async function getUser(uid: string): Promise<User | null> {
   const snap = await getDoc(doc(db, 'users', uid));
   return snap.exists() ? (snap.data() as User) : null;

@@ -11,12 +11,21 @@ import {
   TextInput,
 } from 'react-native';
 import { useAuth } from '../hooks/useAuth';
-import { getUser, getUserGames, updateUserProfile } from '../lib/db';
+import { getUser, getUserGames, updateUserProfile, getHeadToHead } from '../lib/db';
 import { logOut } from '../lib/auth';
 import { User, Game } from '../types';
 
-export default function ProfileScreen() {
+interface Props {
+  uid?: string;
+  onBack?: () => void;
+  onViewGame?: (gameId: string) => void;
+}
+
+export default function ProfileScreen({ uid: viewUid, onBack, onViewGame }: Props) {
   const { user } = useAuth();
+  const isOwnProfile = !viewUid || viewUid === user?.uid;
+  const targetUid = viewUid ?? user?.uid ?? '';
+  const [h2h, setH2h] = useState<{ wins: number; losses: number } | null>(null);
   const [profile, setProfile] = useState<User | null>(null);
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,11 +36,15 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
-    if (!user) return;
-    const [p, g] = await Promise.all([getUser(user.uid), getUserGames(user.uid)]);
+    if (!targetUid) return;
+    const [p, g] = await Promise.all([getUser(targetUid), getUserGames(targetUid)]);
     setProfile(p);
     setGames(g);
-  }, [user]);
+    if (!isOwnProfile && user) {
+      const record = await getHeadToHead(user.uid, targetUid);
+      setH2h(record);
+    }
+  }, [targetUid, isOwnProfile, user]);
 
   useEffect(() => {
     load().finally(() => setLoading(false));
@@ -103,6 +116,11 @@ export default function ProfileScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#c9a844" />}
       ListHeaderComponent={
         <>
+          {onBack && (
+            <TouchableOpacity onPress={onBack} style={styles.backButton}>
+              <Text style={styles.backButtonText}>← Back</Text>
+            </TouchableOpacity>
+          )}
           <View style={styles.profileHeader}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>
@@ -112,10 +130,17 @@ export default function ProfileScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.displayName}>{profile?.displayName}</Text>
               <Text style={styles.username}>@{profile?.username}</Text>
+              {h2h && (
+                <Text style={styles.h2hBadge}>
+                  vs. You: {h2h.wins}W-{h2h.losses}L
+                </Text>
+              )}
             </View>
-            <TouchableOpacity onPress={startEditing} style={styles.editButton}>
-              <Text style={styles.editButtonText}>Edit</Text>
-            </TouchableOpacity>
+            {isOwnProfile && (
+              <TouchableOpacity onPress={startEditing} style={styles.editButton}>
+                <Text style={styles.editButtonText}>Edit</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {editing && (
@@ -184,7 +209,7 @@ export default function ProfileScreen() {
         const totalCaps = item.capsMade + item.bounces;
         const date = new Date(item.date).toLocaleDateString();
         return (
-          <View style={styles.gameRow}>
+          <TouchableOpacity style={styles.gameRow} onPress={() => onViewGame?.(item.id)} activeOpacity={onViewGame ? 0.7 : 1}>
             <View style={styles.gameLeft}>
               <Text style={styles.gameDate}>{date}</Text>
               <Text style={styles.gameCaps}>{totalCaps} caps</Text>
@@ -201,14 +226,16 @@ export default function ProfileScreen() {
                 {item.status}
               </Text>
             </View>
-          </View>
+          </TouchableOpacity>
         );
       }}
       ListEmptyComponent={<Text style={styles.emptyText}>No games logged yet.</Text>}
       ListFooterComponent={
-        <TouchableOpacity style={styles.logOutButton} onPress={handleLogOut}>
-          <Text style={styles.logOutText}>Log Out</Text>
-        </TouchableOpacity>
+        isOwnProfile ? (
+          <TouchableOpacity style={styles.logOutButton} onPress={handleLogOut}>
+            <Text style={styles.logOutText}>Log Out</Text>
+          </TouchableOpacity>
+        ) : null
       }
     />
   );
@@ -217,7 +244,10 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0f2e' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0f2e' },
-  profileHeader: { flexDirection: 'row', alignItems: 'center', padding: 24, gap: 16 },
+  backButton: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 4 },
+  backButtonText: { color: '#c9a844', fontSize: 16 },
+  h2hBadge: { color: '#c9a844', fontSize: 12, fontWeight: '700', marginTop: 4 },
+  profileHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 16, gap: 16 },
   avatar: {
     width: 64, height: 64, borderRadius: 32,
     backgroundColor: '#c9a844', justifyContent: 'center', alignItems: 'center',
