@@ -29,6 +29,27 @@ export async function getAllUsers(): Promise<User[]> {
   return snap.docs.map((d) => d.data() as User);
 }
 
+export async function getRecentTeammates(userId: string, limit = 5): Promise<User[]> {
+  const snap = await getDocs(
+    query(collection(db, 'games'), where('userId', '==', userId), orderBy('date', 'desc'))
+  );
+  const seenUids = new Set<string>();
+  const recentUids: string[] = [];
+  for (const d of snap.docs) {
+    const g = d.data() as Game;
+    for (const pid of g.players) {
+      if (pid !== userId && !seenUids.has(pid)) {
+        seenUids.add(pid);
+        recentUids.push(pid);
+        if (recentUids.length >= limit) break;
+      }
+    }
+    if (recentUids.length >= limit) break;
+  }
+  const users = await Promise.all(recentUids.map((uid) => getUser(uid)));
+  return users.filter(Boolean) as User[];
+}
+
 export async function logGame(
   userId: string,
   players: string[],

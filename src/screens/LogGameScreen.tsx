@@ -11,7 +11,7 @@ import {
   FlatList,
 } from 'react-native';
 import { useAuth } from '../hooks/useAuth';
-import { getAllUsers, logGame } from '../lib/db';
+import { getAllUsers, getRecentTeammates, logGame } from '../lib/db';
 import { User } from '../types';
 
 interface Props {
@@ -21,6 +21,7 @@ interface Props {
 
 export default function LogGameScreen({ onSuccess, onBack }: Props) {
   const { user } = useAuth();
+  const [recentUsers, setRecentUsers] = useState<User[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [capsMade, setCapsMade] = useState('');
@@ -33,8 +34,13 @@ export default function LogGameScreen({ onSuccess, onBack }: Props) {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    getAllUsers().then((users) => {
-      setAllUsers(users.filter((u) => u.uid !== user?.uid));
+    if (!user) return;
+    Promise.all([
+      getRecentTeammates(user.uid, 5),
+      getAllUsers(),
+    ]).then(([recent, all]) => {
+      setRecentUsers(recent);
+      setAllUsers(all.filter((u) => u.uid !== user.uid));
       setUsersLoading(false);
     });
   }, [user]);
@@ -81,11 +87,13 @@ export default function LogGameScreen({ onSuccess, onBack }: Props) {
     }
   }
 
-  const filtered = allUsers.filter(
-    (u) =>
-      u.displayName.toLowerCase().includes(search.toLowerCase()) ||
-      u.username.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = search.trim()
+    ? allUsers.filter(
+        (u) =>
+          u.displayName.toLowerCase().includes(search.toLowerCase()) ||
+          u.username.toLowerCase().includes(search.toLowerCase())
+      )
+    : recentUsers;
 
   return (
     <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
@@ -97,7 +105,9 @@ export default function LogGameScreen({ onSuccess, onBack }: Props) {
       </View>
 
       {/* Player Selection */}
-      <Text style={styles.sectionLabel}>Players in this game ({selectedPlayers.length}/3 selected)</Text>
+      <Text style={styles.sectionLabel}>
+        {search.trim() ? `Search results` : `Recent teammates`} ({selectedPlayers.length}/3 selected)
+      </Text>
       <TextInput
         style={styles.searchInput}
         placeholder="Search players..."
