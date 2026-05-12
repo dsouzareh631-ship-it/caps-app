@@ -102,22 +102,9 @@ export default function SignUpScreen({ onNavigateToLogin }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 28,
-  },
-  title: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: '#fff',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#888',
-    marginBottom: 40,
-  },
+  container: { flexGrow: 1, justifyContent: 'center', padding: 28 },
+  title: { fontSize: 36, fontWeight: '800', color: '#fff', marginBottom: 4 },
+  subtitle: { fontSize: 16, color: '#888', marginBottom: 40 },
   input: {
     backgroundColor: '#111d4a',
     color: '#fff',
@@ -136,23 +123,8 @@ const styles = StyleSheet.create({
     marginTop: 6,
     marginBottom: 16,
   },
-  buttonText: {
-    color: '#000',
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  link: {
-    color: '#c9a844',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  mutedText: {
-    color: '#888',
-    fontSize: 14,
-  },
-  loginRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 20,
-  },
+  buttonText: { color: '#000', fontWeight: '700', fontSize: 16 },
+  link: { color: '#c9a844', fontWeight: '600', fontSize: 14 },
+  mutedText: { color: '#888', fontSize: 14 },
+  loginRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
 });

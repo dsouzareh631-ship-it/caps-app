@@ -4,7 +4,7 @@ import {
   sendPasswordResetEmail,
   signOut,
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
 export async function signUp(email: string, password: string, displayName: string, username: string) {
