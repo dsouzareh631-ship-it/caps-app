@@ -1,0 +1,266 @@
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+  FlatList,
+} from 'react-native';
+import { useAuth } from '../hooks/useAuth';
+import { getAllUsers, logGame } from '../lib/db';
+import { User } from '../types';
+
+interface Props {
+  onSuccess: () => void;
+  onBack: () => void;
+}
+
+export default function LogGameScreen({ onSuccess, onBack }: Props) {
+  const { user } = useAuth();
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+  const [capsMade, setCapsMade] = useState('');
+  const [bounces, setBounces] = useState('0');
+  const [rebuttals, setRebuttals] = useState('0');
+  const [result, setResult] = useState<'win' | 'loss' | null>(null);
+  const [notes, setNotes] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    getAllUsers().then((users) => {
+      setAllUsers(users.filter((u) => u.uid !== user?.uid));
+      setUsersLoading(false);
+    });
+  }, [user]);
+
+  function togglePlayer(uid: string) {
+    setSelectedPlayers((prev) =>
+      prev.includes(uid) ? prev.filter((p) => p !== uid) : prev.length < 3 ? [...prev, uid] : prev
+    );
+  }
+
+  async function handleSubmit() {
+    if (!user) return;
+    if (selectedPlayers.length === 0) {
+      Alert.alert('Error', 'Select at least one other player.');
+      return;
+    }
+    if (!capsMade || isNaN(Number(capsMade))) {
+      Alert.alert('Error', 'Enter a valid number of caps made.');
+      return;
+    }
+    if (!result) {
+      Alert.alert('Error', 'Select a result (Win or Loss).');
+      return;
+    }
+    setLoading(true);
+    try {
+      const allPlayers = [user.uid, ...selectedPlayers];
+      await logGame(
+        user.uid,
+        allPlayers,
+        Number(capsMade),
+        Number(bounces) || 0,
+        Number(rebuttals) || 0,
+        result,
+        notes.trim(),
+        Date.now()
+      );
+      Alert.alert('Game Logged!', 'Waiting for a player to verify your stats.');
+      onSuccess();
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const filtered = allUsers.filter(
+    (u) =>
+      u.displayName.toLowerCase().includes(search.toLowerCase()) ||
+      u.username.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+      <View style={styles.header}>
+        <TouchableOpacity onPress={onBack}>
+          <Text style={styles.backButton}>← Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.title}>Log a Game</Text>
+      </View>
+
+      {/* Player Selection */}
+      <Text style={styles.sectionLabel}>Players in this game ({selectedPlayers.length}/3 selected)</Text>
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Search players..."
+        placeholderTextColor="#888"
+        value={search}
+        onChangeText={setSearch}
+        autoCapitalize="none"
+      />
+      {usersLoading ? (
+        <ActivityIndicator color="#c9a844" style={{ marginVertical: 16 }} />
+      ) : (
+        filtered.map((u) => {
+          const selected = selectedPlayers.includes(u.uid);
+          return (
+            <TouchableOpacity
+              key={u.uid}
+              style={[styles.playerRow, selected && styles.playerRowSelected]}
+              onPress={() => togglePlayer(u.uid)}
+            >
+              <Text style={styles.playerName}>{u.displayName}</Text>
+              <Text style={styles.playerUsername}>@{u.username}</Text>
+              {selected && <Text style={styles.checkmark}>✓</Text>}
+            </TouchableOpacity>
+          );
+        })
+      )}
+
+      {/* Caps Made */}
+      <Text style={styles.sectionLabel}>Caps Made (clean)</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="0"
+        placeholderTextColor="#888"
+        keyboardType="number-pad"
+        value={capsMade}
+        onChangeText={setCapsMade}
+      />
+
+      <Text style={styles.sectionLabel}>Bounces (cap in via bounce)</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="0"
+        placeholderTextColor="#888"
+        keyboardType="number-pad"
+        value={bounces}
+        onChangeText={setBounces}
+      />
+
+      <Text style={styles.sectionLabel}>Rebuttals Made</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="0"
+        placeholderTextColor="#888"
+        keyboardType="number-pad"
+        value={rebuttals}
+        onChangeText={setRebuttals}
+      />
+
+      {/* Result */}
+      <Text style={styles.sectionLabel}>Result</Text>
+      <View style={styles.resultRow}>
+        <TouchableOpacity
+          style={[styles.resultButton, result === 'win' && styles.resultWin]}
+          onPress={() => setResult('win')}
+        >
+          <Text style={[styles.resultText, result === 'win' && styles.resultTextActive]}>Win</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.resultButton, result === 'loss' && styles.resultLoss]}
+          onPress={() => setResult('loss')}
+        >
+          <Text style={[styles.resultText, result === 'loss' && styles.resultTextActive]}>Loss</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Notes */}
+      <Text style={styles.sectionLabel}>Notes (optional)</Text>
+      <TextInput
+        style={[styles.input, styles.notesInput]}
+        placeholder="Anything memorable..."
+        placeholderTextColor="#888"
+        multiline
+        value={notes}
+        onChangeText={setNotes}
+      />
+
+      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={loading}>
+        {loading ? (
+          <ActivityIndicator color="#000" />
+        ) : (
+          <Text style={styles.submitText}>Submit for Verification</Text>
+        )}
+      </TouchableOpacity>
+
+      <View style={{ height: 40 }} />
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#0a0f2e' },
+  header: { padding: 24, paddingBottom: 8 },
+  backButton: { color: '#c9a844', fontSize: 16, marginBottom: 12 },
+  title: { fontSize: 28, fontWeight: '800', color: '#fff' },
+  sectionLabel: { color: '#888', fontSize: 13, fontWeight: '600', paddingHorizontal: 20, marginTop: 22, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  searchInput: {
+    backgroundColor: '#111d4a',
+    color: '#fff',
+    borderRadius: 10,
+    padding: 14,
+    fontSize: 15,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#1e2d6b',
+  },
+  playerRow: {
+    backgroundColor: '#111d4a',
+    marginHorizontal: 16,
+    marginBottom: 6,
+    borderRadius: 10,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#1e2d6b',
+  },
+  playerRowSelected: { borderColor: '#c9a844', backgroundColor: '#0d1535' },
+  playerName: { color: '#fff', fontWeight: '600', fontSize: 15, flex: 1 },
+  playerUsername: { color: '#888', fontSize: 13, marginRight: 8 },
+  checkmark: { color: '#c9a844', fontWeight: '800', fontSize: 16 },
+  input: {
+    backgroundColor: '#111d4a',
+    color: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 18,
+    marginHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#1e2d6b',
+  },
+  notesInput: { height: 100, textAlignVertical: 'top', fontSize: 15 },
+  resultRow: { flexDirection: 'row', gap: 12, marginHorizontal: 16 },
+  resultButton: {
+    flex: 1,
+    borderRadius: 12,
+    padding: 18,
+    alignItems: 'center',
+    backgroundColor: '#111d4a',
+    borderWidth: 1,
+    borderColor: '#1e2d6b',
+  },
+  resultWin: { backgroundColor: '#0d2b0d', borderColor: '#4caf50' },
+  resultLoss: { backgroundColor: '#2b0d0d', borderColor: '#f44336' },
+  resultText: { color: '#888', fontWeight: '700', fontSize: 16 },
+  resultTextActive: { color: '#fff' },
+  submitButton: {
+    backgroundColor: '#c9a844',
+    borderRadius: 14,
+    padding: 18,
+    marginHorizontal: 16,
+    alignItems: 'center',
+    marginTop: 28,
+  },
+  submitText: { color: '#000', fontWeight: '800', fontSize: 17 },
+});
