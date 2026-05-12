@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getGameById, getUser } from '../lib/db';
 import { Game, User } from '../types';
 
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function GameDetailScreen({ gameId, onBack }: Props) {
+  const insets = useSafeAreaInsets();
   const [game, setGame] = useState<Game | null>(null);
   const [players, setPlayers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +47,7 @@ export default function GameDetailScreen({ gameId, onBack }: Props) {
   const totalCaps = game.capsMade + game.bounces + (game.rebuttals ?? 0);
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack}>
           <Text style={styles.back}>← Back</Text>

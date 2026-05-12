@@ -10,6 +10,7 @@ import {
   RefreshControl,
   TextInput,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
 import { getUser, getUserGames, updateUserProfile, getHeadToHead } from '../lib/db';
 import { logOut } from '../lib/auth';
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export default function ProfileScreen({ uid: viewUid, onBack, onViewGame }: Props) {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const isOwnProfile = !viewUid || viewUid === user?.uid;
   const targetUid = viewUid ?? user?.uid ?? '';
@@ -110,7 +112,7 @@ export default function ProfileScreen({ uid: viewUid, onBack, onViewGame }: Prop
 
   return (
     <FlatList
-      style={styles.container}
+      style={[styles.container, { paddingTop: insets.top }]}
       data={games}
       keyExtractor={(item) => item.id}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#c9a844" />}
@@ -122,15 +124,9 @@ export default function ProfileScreen({ uid: viewUid, onBack, onViewGame }: Prop
             </TouchableOpacity>
           )}
           <View style={styles.profileHeader}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {profile?.displayName?.charAt(0).toUpperCase() ?? '?'}
-              </Text>
-            </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.displayName}>{profile?.displayName}</Text>
-              <Text style={styles.username}>@{profile?.username}</Text>
-              {h2h && (
+{h2h && (
                 <Text style={styles.h2hBadge}>
                   vs. You: {h2h.wins}W-{h2h.losses}L
                 </Text>

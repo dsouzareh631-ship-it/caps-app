@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
 import { getPendingVerifications, approveGame, rejectGame, getUser } from '../lib/db';
 import { Game, User } from '../types';
@@ -23,6 +24,7 @@ interface GameWithOwner {
 }
 
 export default function VerificationsScreen({ onBack }: Props) {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [items, setItems] = useState<GameWithOwner[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,7 +95,7 @@ export default function VerificationsScreen({ onBack }: Props) {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack}>
           <Text style={styles.backButton}>← Back</Text>

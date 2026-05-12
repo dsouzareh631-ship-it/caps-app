@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getAllTimeLeaderboard, getPeriodLeaderboard, getAchievements, Achievements } from '../lib/db';
 import { LeaderboardEntry } from '../types';
 
@@ -40,6 +41,7 @@ interface Props {
 }
 
 export default function LeaderboardScreen({ onViewPlayer }: Props) {
+  const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>('alltime');
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [achievements, setAchievements] = useState<Achievements | null>(null);
@@ -48,17 +50,22 @@ export default function LeaderboardScreen({ onViewPlayer }: Props) {
 
   const load = useCallback(async (t: Tab) => {
     setLoading(true);
-    if (t === 'achievements') {
-      const ach = await getAchievements();
-      setAchievements(ach);
-    } else if (t === 'alltime') {
-      setEntries(await getAllTimeLeaderboard());
-    } else if (t === 'weekly') {
-      setEntries(await getPeriodLeaderboard(startOfWeek()));
-    } else {
-      setEntries(await getPeriodLeaderboard(startOfMonth()));
+    try {
+      if (t === 'achievements') {
+        const ach = await getAchievements();
+        setAchievements(ach);
+      } else if (t === 'alltime') {
+        setEntries(await getAllTimeLeaderboard());
+      } else if (t === 'weekly') {
+        setEntries(await getPeriodLeaderboard(startOfWeek()));
+      } else {
+        setEntries(await getPeriodLeaderboard(startOfMonth()));
+      }
+    } catch (e) {
+      console.error('Leaderboard load error:', e);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => { load(tab); }, [tab, load]);
@@ -70,7 +77,7 @@ export default function LeaderboardScreen({ onViewPlayer }: Props) {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <Text style={styles.title}>Leaderboard</Text>
 
       <View style={styles.tabs}>

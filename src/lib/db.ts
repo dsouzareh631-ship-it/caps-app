@@ -216,12 +216,14 @@ export async function getPeriodLeaderboard(since: number): Promise<LeaderboardEn
     });
   }
 
-  // Fetch user display info
+  // Fetch user display info in parallel
   const userIds = Array.from(map.keys());
+  const users = await Promise.all(userIds.map((uid) => getUser(uid)));
   const entries: LeaderboardEntry[] = [];
-  for (const uid of userIds) {
-    const user = await getUser(uid);
+  for (let i = 0; i < userIds.length; i++) {
+    const user = users[i];
     if (!user) continue;
+    const uid = userIds[i];
     const stats = map.get(uid)!;
     entries.push({
       uid,

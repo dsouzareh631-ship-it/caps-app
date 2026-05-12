@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Animated,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
 import { getUser, getUserGames, getPendingVerifications } from '../lib/db';
 import { User, Game } from '../types';
@@ -79,6 +80,7 @@ function BouncyLogButton({ onPress }: { onPress: () => void }) {
 }
 
 export default function HomeScreen({ onLogGame, onViewVerifications, onViewGame }: Props) {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [profile, setProfile] = useState<User | null>(null);
   const [recentGames, setRecentGames] = useState<Game[]>([]);
@@ -122,7 +124,7 @@ export default function HomeScreen({ onLogGame, onViewVerifications, onViewGame 
       : '0.0';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <FloatingBubbles />
       <FlatList
         style={{ flex: 1 }}

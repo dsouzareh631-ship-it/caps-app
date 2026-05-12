@@ -11,6 +11,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { logIn, resetPassword } from '../lib/auth';
 import { FloatingCaps } from '../components/FloatingCaps';
 
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export default function LoginScreen({ onNavigateToSignUp }: Props) {
+  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -53,7 +55,7 @@ export default function LoginScreen({ onNavigateToSignUp }: Props) {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { paddingTop: insets.top }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <FloatingCaps />

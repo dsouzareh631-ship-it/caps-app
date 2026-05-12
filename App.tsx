@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View, ActivityIndicator, StyleSheet } from 'react-native';
@@ -89,56 +90,74 @@ export default function App() {
 
   if (loading) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator color="#c9a844" size="large" />
-      </View>
+      <SafeAreaProvider>
+        <View style={styles.loading}>
+          <ActivityIndicator color="#c9a844" size="large" />
+        </View>
+      </SafeAreaProvider>
     );
   }
 
   if (!user) {
     return (
-      <NavigationContainer>
-        <AuthFlow />
-      </NavigationContainer>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <AuthFlow />
+        </NavigationContainer>
+      </SafeAreaProvider>
     );
   }
 
   if (modal === 'logGame') {
     return (
-      <LogGameScreen
-        onSuccess={() => setModal(null)}
-        onBack={() => setModal(null)}
-      />
+      <SafeAreaProvider>
+        <LogGameScreen
+          onSuccess={() => setModal(null)}
+          onBack={() => setModal(null)}
+        />
+      </SafeAreaProvider>
     );
   }
 
   if (modal === 'verifications') {
-    return <VerificationsScreen onBack={() => setModal(null)} />;
+    return (
+      <SafeAreaProvider>
+        <VerificationsScreen onBack={() => setModal(null)} />
+      </SafeAreaProvider>
+    );
   }
 
   if (viewingGame) {
-    return <GameDetailScreen gameId={viewingGame} onBack={() => setViewingGame(null)} />;
+    return (
+      <SafeAreaProvider>
+        <GameDetailScreen gameId={viewingGame} onBack={() => setViewingGame(null)} />
+      </SafeAreaProvider>
+    );
   }
 
   if (viewingPlayer) {
     return (
-      <ProfileScreen
-        uid={viewingPlayer}
-        onBack={() => setViewingPlayer(null)}
-        onViewGame={(gameId) => setViewingGame(gameId)}
-      />
+      <SafeAreaProvider>
+        <ProfileScreen
+          uid={viewingPlayer}
+          onBack={() => setViewingPlayer(null)}
+          onViewGame={(gameId) => setViewingGame(gameId)}
+        />
+      </SafeAreaProvider>
     );
   }
 
   return (
-    <NavigationContainer>
-      <MainTabs
-        onLogGame={() => setModal('logGame')}
-        onViewVerifications={() => setModal('verifications')}
-        onViewPlayer={(uid) => setViewingPlayer(uid)}
-        onViewGame={(gameId) => setViewingGame(gameId)}
-      />
-    </NavigationContainer>
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <MainTabs
+          onLogGame={() => setModal('logGame')}
+          onViewVerifications={() => setModal('verifications')}
+          onViewPlayer={(uid) => setViewingPlayer(uid)}
+          onViewGame={(gameId) => setViewingGame(gameId)}
+        />
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
 

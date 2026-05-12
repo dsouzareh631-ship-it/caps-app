@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { signUp } from '../lib/auth';
 
 interface Props {
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export default function SignUpScreen({ onNavigateToLogin }: Props) {
+  const insets = useSafeAreaInsets();
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -44,7 +46,7 @@ export default function SignUpScreen({ onNavigateToLogin }: Props) {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: '#0a0f2e' }}
+      style={{ flex: 1, backgroundColor: '#0a0f2e', paddingTop: insets.top }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">

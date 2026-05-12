@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   FlatList,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
 import { getAllUsers, getRecentTeammates, logGame } from '../lib/db';
 import { User } from '../types';
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export default function LogGameScreen({ onSuccess, onBack }: Props) {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [recentUsers, setRecentUsers] = useState<User[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -41,6 +43,9 @@ export default function LogGameScreen({ onSuccess, onBack }: Props) {
     ]).then(([recent, all]) => {
       setRecentUsers(recent);
       setAllUsers(all.filter((u) => u.uid !== user.uid));
+    }).catch((e) => {
+      console.error('LogGame users load error:', e);
+    }).finally(() => {
       setUsersLoading(false);
     });
   }, [user]);
@@ -90,13 +95,13 @@ export default function LogGameScreen({ onSuccess, onBack }: Props) {
   const filtered = search.trim()
     ? allUsers.filter(
         (u) =>
-          u.displayName.toLowerCase().includes(search.toLowerCase()) ||
-          u.username.toLowerCase().includes(search.toLowerCase())
+          (u.displayName ?? '').toLowerCase().includes(search.toLowerCase()) ||
+          (u.username ?? '').toLowerCase().includes(search.toLowerCase())
       )
     : recentUsers;
 
   return (
-    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+    <ScrollView style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]} keyboardShouldPersistTaps="handled">
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack}>
           <Text style={styles.backButton}>← Back</Text>
