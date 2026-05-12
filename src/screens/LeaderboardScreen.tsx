@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   FlatList,
+  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
@@ -11,7 +12,7 @@ import {
 import { getAllTimeLeaderboard, getPeriodLeaderboard, getAchievements, Achievements } from '../lib/db';
 import { LeaderboardEntry } from '../types';
 
-type Tab = 'weekly' | 'monthly' | 'alltime';
+type Tab = 'weekly' | 'monthly' | 'alltime' | 'achievements';
 
 function startOfWeek(): number {
   const d = new Date();
@@ -27,6 +28,13 @@ function startOfMonth(): number {
   return d.getTime();
 }
 
+const TAB_LABELS: Record<Tab, string> = {
+  weekly: 'Weekly',
+  monthly: 'Monthly',
+  alltime: 'All Time',
+  achievements: 'Achievements',
+};
+
 export default function LeaderboardScreen() {
   const [tab, setTab] = useState<Tab>('alltime');
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
@@ -35,27 +43,25 @@ export default function LeaderboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async (t: Tab) => {
-    if (t === 'alltime') {
-      return getAllTimeLeaderboard();
+    setLoading(true);
+    if (t === 'achievements') {
+      const ach = await getAchievements();
+      setAchievements(ach);
+    } else if (t === 'alltime') {
+      setEntries(await getAllTimeLeaderboard());
     } else if (t === 'weekly') {
-      return getPeriodLeaderboard(startOfWeek());
+      setEntries(await getPeriodLeaderboard(startOfWeek()));
     } else {
-      return getPeriodLeaderboard(startOfMonth());
+      setEntries(await getPeriodLeaderboard(startOfMonth()));
     }
+    setLoading(false);
   }, []);
 
-  useEffect(() => {
-    setLoading(true);
-    Promise.all([load(tab), getAchievements()])
-      .then(([data, ach]) => { setEntries(data); setAchievements(ach); })
-      .finally(() => setLoading(false));
-  }, [tab, load]);
+  useEffect(() => { load(tab); }, [tab, load]);
 
   async function onRefresh() {
     setRefreshing(true);
-    const [data, ach] = await Promise.all([load(tab), getAchievements()]);
-    setEntries(data);
-    setAchievements(ach);
+    await load(tab);
     setRefreshing(false);
   }
 
@@ -64,14 +70,14 @@ export default function LeaderboardScreen() {
       <Text style={styles.title}>Leaderboard</Text>
 
       <View style={styles.tabs}>
-        {(['weekly', 'monthly', 'alltime'] as Tab[]).map((t) => (
+        {(['weekly', 'monthly', 'alltime', 'achievements'] as Tab[]).map((t) => (
           <TouchableOpacity
             key={t}
             style={[styles.tab, tab === t && styles.tabActive]}
             onPress={() => setTab(t)}
           >
             <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-              {t === 'alltime' ? 'All Time' : t.charAt(0).toUpperCase() + t.slice(1)}
+              {TAB_LABELS[t]}
             </Text>
           </TouchableOpacity>
         ))}
@@ -81,6 +87,35 @@ export default function LeaderboardScreen() {
         <View style={styles.centered}>
           <ActivityIndicator color="#c9a844" size="large" />
         </View>
+      ) : tab === 'achievements' ? (
+        <ScrollView
+          contentContainerStyle={{ padding: 16 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#c9a844" />}
+        >
+          {achievements?.mrRebuttal ? (
+            <View style={styles.achievementCard}>
+              <Text style={styles.achievementBadge}>🏅</Text>
+              <View style={styles.achievementInfo}>
+                <Text style={styles.achievementLabel}>Mr. Rebuttal</Text>
+                <Text style={styles.achievementUser}>@{achievements.mrRebuttal.username}</Text>
+              </View>
+              <Text style={styles.achievementStat}>{achievements.mrRebuttal.total}</Text>
+            </View>
+          ) : null}
+          {achievements?.bounceMerchant ? (
+            <View style={styles.achievementCard}>
+              <Text style={styles.achievementBadge}>🎯</Text>
+              <View style={styles.achievementInfo}>
+                <Text style={styles.achievementLabel}>Bounce Merchant</Text>
+                <Text style={styles.achievementUser}>@{achievements.bounceMerchant.username}</Text>
+              </View>
+              <Text style={styles.achievementStat}>{achievements.bounceMerchant.total}</Text>
+            </View>
+          ) : null}
+          {!achievements?.mrRebuttal && !achievements?.bounceMerchant && (
+            <Text style={styles.emptyText}>No achievements yet. Log some games!</Text>
+          )}
+        </ScrollView>
       ) : (
         <FlatList
           data={entries}
@@ -112,33 +147,6 @@ export default function LeaderboardScreen() {
           ListEmptyComponent={
             <Text style={styles.emptyText}>No games logged {tab === 'alltime' ? 'yet' : 'this ' + (tab === 'weekly' ? 'week' : 'month')}.</Text>
           }
-          ListFooterComponent={
-            achievements ? (
-              <View style={styles.achievementsSection}>
-                <Text style={styles.achievementsTitle}>Achievements</Text>
-                {achievements.mrRebuttal && (
-                  <View style={styles.achievementCard}>
-                    <Text style={styles.achievementBadge}>🏅</Text>
-                    <View style={styles.achievementInfo}>
-                      <Text style={styles.achievementLabel}>Mr. Rebuttal</Text>
-                      <Text style={styles.achievementUser}>@{achievements.mrRebuttal.username}</Text>
-                    </View>
-                    <Text style={styles.achievementStat}>{achievements.mrRebuttal.total}</Text>
-                  </View>
-                )}
-                {achievements.bounceMerchant && (
-                  <View style={styles.achievementCard}>
-                    <Text style={styles.achievementBadge}>🎯</Text>
-                    <View style={styles.achievementInfo}>
-                      <Text style={styles.achievementLabel}>Bounce Merchant</Text>
-                      <Text style={styles.achievementUser}>@{achievements.bounceMerchant.username}</Text>
-                    </View>
-                    <Text style={styles.achievementStat}>{achievements.bounceMerchant.total}</Text>
-                  </View>
-                )}
-              </View>
-            ) : null
-          }
         />
       )}
     </View>
@@ -159,7 +167,7 @@ const styles = StyleSheet.create({
   },
   tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 10 },
   tabActive: { backgroundColor: '#c9a844' },
-  tabText: { color: '#888', fontWeight: '600', fontSize: 14 },
+  tabText: { color: '#888', fontWeight: '600', fontSize: 11 },
   tabTextActive: { color: '#000' },
   row: {
     backgroundColor: '#111d4a',
@@ -183,21 +191,19 @@ const styles = StyleSheet.create({
   capsLabel: { color: '#555', fontSize: 10 },
   record: { color: '#888', fontSize: 12, fontWeight: '600' },
   emptyText: { color: '#555', textAlign: 'center', marginTop: 60, fontSize: 15 },
-  achievementsSection: { marginTop: 24, marginBottom: 8 },
-  achievementsTitle: { fontSize: 18, fontWeight: '700', color: '#fff', marginBottom: 12 },
   achievementCard: {
     backgroundColor: '#111d4a',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 8,
+    marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#c9a844',
   },
-  achievementBadge: { fontSize: 28, marginRight: 14 },
+  achievementBadge: { fontSize: 32, marginRight: 14 },
   achievementInfo: { flex: 1 },
-  achievementLabel: { color: '#c9a844', fontWeight: '800', fontSize: 15 },
+  achievementLabel: { color: '#c9a844', fontWeight: '800', fontSize: 16 },
   achievementUser: { color: '#888', fontSize: 13, marginTop: 2 },
-  achievementStat: { color: '#fff', fontWeight: '700', fontSize: 18 },
+  achievementStat: { color: '#fff', fontWeight: '700', fontSize: 20 },
 });
