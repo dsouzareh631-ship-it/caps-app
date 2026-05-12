@@ -8,6 +8,8 @@ export interface User {
   totalGames: number;
   totalWins: number;
   totalLosses: number;
+  currentWinStreak: number;
+  bestWinStreak: number;
 }
 
 export interface Game {

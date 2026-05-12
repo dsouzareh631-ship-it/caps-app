@@ -8,9 +8,10 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  TextInput,
 } from 'react-native';
 import { useAuth } from '../hooks/useAuth';
-import { getUser, getUserGames } from '../lib/db';
+import { getUser, getUserGames, updateUserProfile } from '../lib/db';
 import { logOut } from '../lib/auth';
 import { User, Game } from '../types';
 
@@ -20,6 +21,10 @@ export default function ProfileScreen() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editUsername, setEditUsername] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -36,6 +41,33 @@ export default function ProfileScreen() {
     setRefreshing(true);
     await load();
     setRefreshing(false);
+  }
+
+  function startEditing() {
+    setEditName(profile?.displayName ?? '');
+    setEditUsername(profile?.username ?? '');
+    setEditing(true);
+  }
+
+  async function handleSave() {
+    if (!user) return;
+    if (!editName.trim() || !editUsername.trim()) {
+      Alert.alert('Error', 'Name and username cannot be empty.');
+      return;
+    }
+    setSaving(true);
+    try {
+      await updateUserProfile(user.uid, {
+        displayName: editName.trim(),
+        username: editUsername.trim().toLowerCase(),
+      });
+      await load();
+      setEditing(false);
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleLogOut() {
@@ -77,11 +109,42 @@ export default function ProfileScreen() {
                 {profile?.displayName?.charAt(0).toUpperCase() ?? '?'}
               </Text>
             </View>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.displayName}>{profile?.displayName}</Text>
               <Text style={styles.username}>@{profile?.username}</Text>
             </View>
+            <TouchableOpacity onPress={startEditing} style={styles.editButton}>
+              <Text style={styles.editButtonText}>Edit</Text>
+            </TouchableOpacity>
           </View>
+
+          {editing && (
+            <View style={styles.editForm}>
+              <Text style={styles.editLabel}>Display Name</Text>
+              <TextInput
+                style={styles.editInput}
+                value={editName}
+                onChangeText={setEditName}
+                placeholderTextColor="#888"
+              />
+              <Text style={styles.editLabel}>Username</Text>
+              <TextInput
+                style={styles.editInput}
+                value={editUsername}
+                onChangeText={setEditUsername}
+                autoCapitalize="none"
+                placeholderTextColor="#888"
+              />
+              <View style={styles.editActions}>
+                <TouchableOpacity style={styles.cancelButton} onPress={() => setEditing(false)}>
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
+                  {saving ? <ActivityIndicator color="#000" size="small" /> : <Text style={styles.saveText}>Save</Text>}
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
 
           <View style={styles.statsGrid}>
             <View style={styles.statBlock}>
@@ -103,6 +166,14 @@ export default function ProfileScreen() {
             <View style={styles.statBlock}>
               <Text style={styles.statVal}>{winRate}</Text>
               <Text style={styles.statLbl}>Win Rate</Text>
+            </View>
+            <View style={styles.statBlock}>
+              <Text style={styles.statVal}>{profile?.currentWinStreak ?? 0} 🔥</Text>
+              <Text style={styles.statLbl}>Streak</Text>
+            </View>
+            <View style={styles.statBlock}>
+              <Text style={styles.statVal}>{profile?.bestWinStreak ?? 0}</Text>
+              <Text style={styles.statLbl}>Best Streak</Text>
             </View>
           </View>
 
@@ -146,53 +217,51 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0f2e' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0f2e' },
-  profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 24,
-    gap: 16,
-  },
+  profileHeader: { flexDirection: 'row', alignItems: 'center', padding: 24, gap: 16 },
   avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#c9a844',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 64, height: 64, borderRadius: 32,
+    backgroundColor: '#c9a844', justifyContent: 'center', alignItems: 'center',
   },
   avatarText: { color: '#000', fontWeight: '800', fontSize: 28 },
   displayName: { color: '#fff', fontWeight: '700', fontSize: 22 },
   username: { color: '#888', fontSize: 14 },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    gap: 10,
-    marginBottom: 24,
+  editButton: {
+    backgroundColor: '#111d4a', borderRadius: 8, paddingHorizontal: 14,
+    paddingVertical: 8, borderWidth: 1, borderColor: '#c9a844',
   },
+  editButtonText: { color: '#c9a844', fontWeight: '700', fontSize: 13 },
+  editForm: {
+    backgroundColor: '#111d4a', marginHorizontal: 16, borderRadius: 14,
+    padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#1e2d6b',
+  },
+  editLabel: { color: '#888', fontSize: 12, fontWeight: '600', marginBottom: 6, textTransform: 'uppercase' },
+  editInput: {
+    backgroundColor: '#0a0f2e', color: '#fff', borderRadius: 10, padding: 12,
+    fontSize: 15, marginBottom: 14, borderWidth: 1, borderColor: '#1e2d6b',
+  },
+  editActions: { flexDirection: 'row', gap: 10 },
+  cancelButton: {
+    flex: 1, borderRadius: 10, padding: 12, alignItems: 'center',
+    borderWidth: 1, borderColor: '#333',
+  },
+  cancelText: { color: '#888', fontWeight: '600' },
+  saveButton: {
+    flex: 1, borderRadius: 10, padding: 12, alignItems: 'center',
+    backgroundColor: '#c9a844',
+  },
+  saveText: { color: '#000', fontWeight: '800' },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, gap: 10, marginBottom: 24 },
   statBlock: {
-    backgroundColor: '#111d4a',
-    borderRadius: 12,
-    padding: 16,
-    minWidth: '30%',
-    flex: 1,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#1e2d6b',
+    backgroundColor: '#111d4a', borderRadius: 12, padding: 16,
+    minWidth: '30%', flex: 1, alignItems: 'center', borderWidth: 1, borderColor: '#1e2d6b',
   },
   statVal: { color: '#c9a844', fontWeight: '800', fontSize: 20 },
   statLbl: { color: '#888', fontSize: 11, marginTop: 4, textAlign: 'center' },
   sectionTitle: { color: '#fff', fontWeight: '700', fontSize: 18, paddingHorizontal: 20, marginBottom: 12 },
   gameRow: {
-    backgroundColor: '#111d4a',
-    marginHorizontal: 16,
-    marginBottom: 10,
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: '#1e2d6b',
+    backgroundColor: '#111d4a', marginHorizontal: 16, marginBottom: 10,
+    borderRadius: 12, padding: 16, flexDirection: 'row',
+    justifyContent: 'space-between', borderWidth: 1, borderColor: '#1e2d6b',
   },
   gameLeft: { flex: 1 },
   gameDate: { color: '#555', fontSize: 12, marginBottom: 4 },
@@ -208,13 +277,6 @@ const styles = StyleSheet.create({
   verifiedText: { color: '#4caf50' },
   rejectedText: { color: '#f44336' },
   emptyText: { color: '#555', textAlign: 'center', marginTop: 30, fontSize: 15 },
-  logOutButton: {
-    margin: 24,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#333',
-  },
+  logOutButton: { margin: 24, borderRadius: 12, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: '#333' },
   logOutText: { color: '#888', fontWeight: '600', fontSize: 15 },
 });

@@ -19,6 +19,8 @@ export async function signUp(email: string, password: string, displayName: strin
     totalGames: 0,
     totalWins: 0,
     totalLosses: 0,
+    currentWinStreak: 0,
+    bestWinStreak: 0,
   });
   return credential.user;
 }

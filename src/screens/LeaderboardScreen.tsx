@@ -112,7 +112,37 @@ export default function LeaderboardScreen() {
               <Text style={styles.achievementStat}>{achievements.bounceMerchant.total}</Text>
             </View>
           ) : null}
-          {!achievements?.mrRebuttal && !achievements?.bounceMerchant && (
+          {achievements?.hotStreak ? (
+            <View style={styles.achievementCard}>
+              <Text style={styles.achievementBadge}>🔥</Text>
+              <View style={styles.achievementInfo}>
+                <Text style={styles.achievementLabel}>Hot Streak</Text>
+                <Text style={styles.achievementUser}>@{achievements.hotStreak.username}</Text>
+              </View>
+              <Text style={styles.achievementStat}>{achievements.hotStreak.total} W</Text>
+            </View>
+          ) : null}
+          {achievements?.sharpShooter ? (
+            <View style={styles.achievementCard}>
+              <Text style={styles.achievementBadge}>🎯</Text>
+              <View style={styles.achievementInfo}>
+                <Text style={styles.achievementLabel}>Sharp Shooter</Text>
+                <Text style={styles.achievementUser}>@{achievements.sharpShooter.username}</Text>
+              </View>
+              <Text style={styles.achievementStat}>{achievements.sharpShooter.total} CPG</Text>
+            </View>
+          ) : null}
+          {achievements?.ironman ? (
+            <View style={styles.achievementCard}>
+              <Text style={styles.achievementBadge}>💪</Text>
+              <View style={styles.achievementInfo}>
+                <Text style={styles.achievementLabel}>Ironman</Text>
+                <Text style={styles.achievementUser}>@{achievements.ironman.username}</Text>
+              </View>
+              <Text style={styles.achievementStat}>{achievements.ironman.total} G</Text>
+            </View>
+          ) : null}
+          {!achievements?.mrRebuttal && !achievements?.bounceMerchant && !achievements?.hotStreak && (
             <Text style={styles.emptyText}>No achievements yet. Log some games!</Text>
           )}
         </ScrollView>

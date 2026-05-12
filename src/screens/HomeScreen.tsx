@@ -139,6 +139,7 @@ export default function HomeScreen({ onLogGame, onViewVerifications }: Props) {
               <StatCard label="Total Caps" value={String(profile?.totalCaps ?? 0)} />
               <StatCard label="CPG" value={cpg} />
               <StatCard label="Record" value={`${profile?.totalWins ?? 0}W-${profile?.totalLosses ?? 0}L`} />
+              <StatCard label="Streak 🔥" value={String(profile?.currentWinStreak ?? 0)} />
             </View>
 
             {pendingCount > 0 && (

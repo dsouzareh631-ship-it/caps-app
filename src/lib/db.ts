@@ -15,6 +15,10 @@ import {
 import { db } from './firebase';
 import { Game, LeaderboardEntry, User } from '../types';
 
+export async function updateUserProfile(uid: string, fields: { displayName: string; username: string }) {
+  await updateDoc(doc(db, 'users', uid), fields);
+}
+
 export async function getUser(uid: string): Promise<User | null> {
   const snap = await getDoc(doc(db, 'users', uid));
   return snap.exists() ? (snap.data() as User) : null;
@@ -65,14 +69,28 @@ export async function approveGame(gameId: string, approverId: string) {
     approvals: arrayUnion(approverId),
   });
 
-  // Update the game owner's aggregate stats
+  // Update the game owner's aggregate stats + win streak
   const userRef = doc(db, 'users', game.userId);
-  await updateDoc(userRef, {
-    totalCaps: increment(game.capsMade + game.bounces + (game.rebuttals ?? 0)),
-    totalGames: increment(1),
-    totalWins: increment(game.result === 'win' ? 1 : 0),
-    totalLosses: increment(game.result === 'loss' ? 1 : 0),
-  });
+  const userSnap = await getDoc(userRef);
+  const userData = userSnap.data() as User;
+
+  if (game.result === 'win') {
+    const newStreak = (userData.currentWinStreak ?? 0) + 1;
+    await updateDoc(userRef, {
+      totalCaps: increment(game.capsMade + game.bounces + (game.rebuttals ?? 0)),
+      totalGames: increment(1),
+      totalWins: increment(1),
+      currentWinStreak: newStreak,
+      bestWinStreak: Math.max(newStreak, userData.bestWinStreak ?? 0),
+    });
+  } else {
+    await updateDoc(userRef, {
+      totalCaps: increment(game.capsMade + game.bounces + (game.rebuttals ?? 0)),
+      totalGames: increment(1),
+      totalLosses: increment(1),
+      currentWinStreak: 0,
+    });
+  }
 }
 
 export async function rejectGame(gameId: string, rejectorId: string) {
@@ -180,6 +198,9 @@ export async function getPeriodLeaderboard(since: number): Promise<LeaderboardEn
 export interface Achievements {
   mrRebuttal: { username: string; displayName: string; total: number } | null;
   bounceMerchant: { username: string; displayName: string; total: number } | null;
+  hotStreak: { username: string; displayName: string; total: number } | null;
+  sharpShooter: { username: string; displayName: string; total: number } | null;
+  ironman: { username: string; displayName: string; total: number } | null;
 }
 
 export async function getAchievements(): Promise<Achievements> {
@@ -209,5 +230,25 @@ export async function getAchievements(): Promise<Achievements> {
     topUser(bouncesMap),
   ]);
 
-  return { mrRebuttal, bounceMerchant };
+  // Achievements from users collection
+  const usersSnap = await getDocs(collection(db, 'users'));
+  const allUsers = usersSnap.docs.map((d) => d.data() as User);
+
+  function topUserFrom(pick: (u: User) => number, minGames = 0) {
+    const eligible = allUsers.filter((u) => (u.totalGames ?? 0) >= minGames);
+    if (eligible.length === 0) return null;
+    const best = eligible.reduce((a, b) => (pick(a) >= pick(b) ? a : b));
+    const val = pick(best);
+    if (val <= 0) return null;
+    return { username: best.username, displayName: best.displayName, total: val };
+  }
+
+  const hotStreak = topUserFrom((u) => u.currentWinStreak ?? 0);
+  const sharpShooter = topUserFrom(
+    (u) => Math.round((u.totalCaps / u.totalGames) * 10) / 10,
+    3
+  );
+  const ironman = topUserFrom((u) => u.totalGames ?? 0);
+
+  return { mrRebuttal, bounceMerchant, hotStreak, sharpShooter, ironman };
 }
