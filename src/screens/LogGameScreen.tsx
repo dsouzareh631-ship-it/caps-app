@@ -14,6 +14,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
 import { getGroupMembers, getRecentTeammates, logGame } from '../lib/db';
+import { notifyTaggedPlayers } from '../lib/notifications';
 import { Group, User } from '../types';
 
 interface Props {
@@ -112,6 +113,7 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup }: Props)
         .map((uid) => allUsers.find((u) => u.uid === uid)?.displayName ?? 'them')
         .join(', ');
       Alert.alert('Game Logged!', `Verification requests have been sent to ${names}.`);
+      notifyTaggedPlayers(selectedPlayers, user.uid);
       onSuccess();
     } catch (e: any) {
       Alert.alert('Error', e.message);

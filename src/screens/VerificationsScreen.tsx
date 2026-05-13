@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
 import { getPendingVerifications, approveGame, rejectGame, getUser } from '../lib/db';
+import { notifyGameVerified, notifyGameRejected } from '../lib/notifications';
 import { Game, User } from '../types';
 
 interface Props {
@@ -54,9 +55,11 @@ export default function VerificationsScreen({ onBack }: Props) {
     if (!user) return;
     setActionLoading(gameId);
     try {
+      const item = items.find((i) => i.game.id === gameId);
       await approveGame(gameId, user.uid);
       setItems((prev) => prev.filter((i) => i.game.id !== gameId));
       Alert.alert('Verified!', 'Stats have been counted.');
+      if (item) notifyGameVerified(item.game.userId, user.uid);
     } catch (e: any) {
       Alert.alert('Error', e.message);
     } finally {
@@ -74,7 +77,9 @@ export default function VerificationsScreen({ onBack }: Props) {
         onPress: async () => {
           setActionLoading(gameId);
           try {
+            const item = items.find((i) => i.game.id === gameId);
             await rejectGame(gameId, user.uid);
+            if (item) notifyGameRejected(item.game.userId, user.uid);
             await load();
           } catch (e: any) {
             Alert.alert('Error', e.message);

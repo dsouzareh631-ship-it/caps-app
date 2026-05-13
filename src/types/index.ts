@@ -11,6 +11,7 @@ export interface User {
   currentWinStreak: number;
   bestWinStreak: number;
   groupIds: string[];
+  expoPushToken?: string;
 }
 
 export interface Group {

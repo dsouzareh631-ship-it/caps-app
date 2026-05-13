@@ -4,6 +4,9 @@
     "slug": "caps-app",
     "version": "1.0.0",
     "orientation": "portrait",
+    "plugins": [
+      ["expo-notifications", { "icon": "./assets/icon.png", "color": "#c9a844" }]
+    ],
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,

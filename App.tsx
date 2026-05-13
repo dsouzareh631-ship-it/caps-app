@@ -5,6 +5,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View, ActivityIndicator, StyleSheet, Modal, TouchableOpacity, FlatList } from 'react-native';
 import { useAuth } from './src/hooks/useAuth';
 import { getUserGroups } from './src/lib/db';
+import { registerForPushNotifications } from './src/lib/notifications';
 import { Group, User } from './src/types';
 import LoginScreen from './src/screens/LoginScreen';
 import SignUpScreen from './src/screens/SignUpScreen';
@@ -149,8 +150,12 @@ export default function App() {
   }, [user]);
 
   useEffect(() => {
-    if (user) loadGroups();
-    else setGroupsLoading(false);
+    if (user) {
+      loadGroups();
+      registerForPushNotifications(user.uid);
+    } else {
+      setGroupsLoading(false);
+    }
   }, [user, loadGroups]);
 
   if (loading || groupsLoading) {
