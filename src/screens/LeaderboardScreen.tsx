@@ -182,6 +182,28 @@ export default function LeaderboardScreen({ onViewPlayer, activeGroup, allGroups
               <Text style={styles.achievementStat}>{achievements.burger.total} L</Text>
             </View>
           ) : null}
+          {achievements?.floatMaster ? (
+            <View style={styles.achievementCard}>
+              <Text style={styles.achievementBadge}>🫧</Text>
+              <View style={styles.achievementInfo}>
+                <Text style={styles.achievementLabel}>Float Master</Text>
+                <Text style={styles.achievementDesc}>Most caps scored via floater</Text>
+                <Text style={styles.achievementUser}>@{achievements.floatMaster.username}</Text>
+              </View>
+              <Text style={styles.achievementStat}>{achievements.floatMaster.total}</Text>
+            </View>
+          ) : null}
+          {achievements?.closer ? (
+            <View style={styles.achievementCard}>
+              <Text style={styles.achievementBadge}>🏁</Text>
+              <View style={styles.achievementInfo}>
+                <Text style={styles.achievementLabel}>The Closer</Text>
+                <Text style={styles.achievementDesc}>Most game winners scored</Text>
+                <Text style={styles.achievementUser}>@{achievements.closer.username}</Text>
+              </View>
+              <Text style={styles.achievementStat}>{achievements.closer.total}</Text>
+            </View>
+          ) : null}
           {!achievements?.mrRebuttal && !achievements?.bounceMerchant && !achievements?.hotStreak && (
             <Text style={styles.emptyText}>No achievements yet. Log some games!</Text>
           )}

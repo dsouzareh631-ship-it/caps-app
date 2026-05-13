@@ -110,7 +110,7 @@ export default function VerificationsScreen({ onBack }: Props) {
         contentContainerStyle={{ padding: 16 }}
         renderItem={({ item }) => {
           const { game, owner } = item;
-          const totalCaps = game.capsMade + game.bounces;
+          const totalCaps = game.capsMade + game.bounces + (game.floaters ?? 0) + (game.gameWinners ?? 0) + (game.rebuttals ?? 0);
           const date = new Date(game.date).toLocaleDateString();
           const isActioning = actionLoading === game.id;
           return (
@@ -119,7 +119,10 @@ export default function VerificationsScreen({ onBack }: Props) {
               <Text style={styles.ownerUsername}>@{owner?.username ?? '?'}</Text>
               <View style={styles.statRow}>
                 <Text style={styles.statItem}>{totalCaps} caps</Text>
-                {game.bounces > 0 && <Text style={styles.bounceTag}>{game.bounces} bounce{game.bounces > 1 ? 's' : ''} *</Text>}
+                {game.bounces > 0 && <Text style={styles.bounceTag}>{game.bounces} bounce{game.bounces > 1 ? 's' : ''}</Text>}
+                {(game.floaters ?? 0) > 0 && <Text style={styles.bounceTag}>{game.floaters} floater{game.floaters !== 1 ? 's' : ''}</Text>}
+                {(game.gameWinners ?? 0) > 0 && <Text style={styles.bounceTag}>{game.gameWinners} game winner{game.gameWinners !== 1 ? 's' : ''}</Text>}
+                {(game.rebuttals ?? 0) > 0 && <Text style={styles.bounceTag}>{game.rebuttals} rebuttal{game.rebuttals !== 1 ? 's' : ''}</Text>}
                 <Text style={[styles.resultTag, game.result === 'win' ? styles.win : styles.loss]}>
                   {game.result.toUpperCase()}
                 </Text>

@@ -218,7 +218,11 @@ export default function App() {
   if (viewingGame) {
     return (
       <SafeAreaProvider>
-        <GameDetailScreen gameId={viewingGame} onBack={() => setViewingGame(null)} />
+        <GameDetailScreen
+          gameId={viewingGame}
+          onBack={() => setViewingGame(null)}
+          onViewPlayer={(uid) => { setViewingGame(null); setViewingPlayer(uid); }}
+        />
       </SafeAreaProvider>
     );
   }

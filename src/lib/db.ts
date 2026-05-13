@@ -104,7 +104,7 @@ export async function getGroupPeriodLeaderboard(memberIds: string[], since: numb
   for (const g of games) {
     const existing = map.get(g.userId) ?? { caps: 0, games: 0, wins: 0, losses: 0 };
     map.set(g.userId, {
-      caps: existing.caps + g.capsMade + g.bounces + (g.floaters ?? 0) + (g.gameWinners ?? 0),
+      caps: existing.caps + g.capsMade + g.bounces + (g.rebuttals ?? 0) + (g.floaters ?? 0) + (g.gameWinners ?? 0),
       games: existing.games + 1,
       wins: existing.wins + (g.result === 'win' ? 1 : 0),
       losses: existing.losses + (g.result === 'loss' ? 1 : 0),
@@ -331,7 +331,7 @@ export async function getPeriodLeaderboard(since: number): Promise<LeaderboardEn
   for (const g of games) {
     const existing = map.get(g.userId) ?? { caps: 0, games: 0, wins: 0, losses: 0 };
     map.set(g.userId, {
-      caps: existing.caps + g.capsMade + g.bounces + (g.floaters ?? 0) + (g.gameWinners ?? 0),
+      caps: existing.caps + g.capsMade + g.bounces + (g.rebuttals ?? 0) + (g.floaters ?? 0) + (g.gameWinners ?? 0),
       games: existing.games + 1,
       wins: existing.wins + (g.result === 'win' ? 1 : 0),
       losses: existing.losses + (g.result === 'loss' ? 1 : 0),
@@ -369,11 +369,15 @@ export interface Achievements {
   sharpShooter: { username: string; displayName: string; total: number } | null;
   ironman: { username: string; displayName: string; total: number } | null;
   burger: { username: string; displayName: string; total: number } | null;
+  floatMaster: { username: string; displayName: string; total: number } | null;
+  closer: { username: string; displayName: string; total: number } | null;
 }
 
 type GroupStats = {
   rebuttals: number;
   bounces: number;
+  floaters: number;
+  gameWinners: number;
   games: number;
   wins: number;
   losses: number;
@@ -395,11 +399,13 @@ export async function getAchievements(memberIds: string[]): Promise<Achievements
     if (!g.players.some(uid => uid !== g.userId && memberIds.includes(uid))) continue;
 
     if (!statsMap.has(g.userId)) {
-      statsMap.set(g.userId, { rebuttals: 0, bounces: 0, games: 0, wins: 0, losses: 0, caps: 0, results: [] });
+      statsMap.set(g.userId, { rebuttals: 0, bounces: 0, floaters: 0, gameWinners: 0, games: 0, wins: 0, losses: 0, caps: 0, results: [] });
     }
     const s = statsMap.get(g.userId)!;
     s.rebuttals += g.rebuttals ?? 0;
     s.bounces += g.bounces ?? 0;
+    s.floaters += g.floaters ?? 0;
+    s.gameWinners += g.gameWinners ?? 0;
     s.games += 1;
     s.wins += g.result === 'win' ? 1 : 0;
     s.losses += g.result === 'loss' ? 1 : 0;
@@ -434,14 +440,16 @@ export async function getAchievements(memberIds: string[]): Promise<Achievements
     return { username: user.username, displayName: user.displayName, total: bestVal };
   }
 
-  const [mrRebuttal, bounceMerchant, hotStreak, ironman, burger, sharpShooter] = await Promise.all([
+  const [mrRebuttal, bounceMerchant, hotStreak, ironman, burger, sharpShooter, floatMaster, closer] = await Promise.all([
     topFromMap(s => s.rebuttals),
     topFromMap(s => s.bounces),
     topFromMap(s => currentStreak(s.results)),
     topFromMap(s => s.games),
     topFromMap(s => s.losses),
     topFromMap(s => Math.round((s.caps / s.games) * 10) / 10, 3),
+    topFromMap(s => s.floaters),
+    topFromMap(s => s.gameWinners),
   ]);
 
-  return { mrRebuttal, bounceMerchant, hotStreak, sharpShooter, ironman, burger };
+  return { mrRebuttal, bounceMerchant, hotStreak, sharpShooter, ironman, burger, floatMaster, closer };
 }

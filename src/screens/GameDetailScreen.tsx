@@ -7,9 +7,10 @@ import { Game, User } from '../types';
 interface Props {
   gameId: string;
   onBack: () => void;
+  onViewPlayer?: (uid: string) => void;
 }
 
-export default function GameDetailScreen({ gameId, onBack }: Props) {
+export default function GameDetailScreen({ gameId, onBack, onViewPlayer }: Props) {
   const insets = useSafeAreaInsets();
   const [game, setGame] = useState<Game | null>(null);
   const [players, setPlayers] = useState<User[]>([]);
@@ -44,7 +45,9 @@ export default function GameDetailScreen({ gameId, onBack }: Props) {
   }
 
   const date = new Date(game.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  const totalCaps = game.capsMade + game.bounces + (game.rebuttals ?? 0);
+  const totalCaps = game.capsMade + game.bounces + (game.rebuttals ?? 0) + (game.floaters ?? 0) + (game.gameWinners ?? 0);
+  const logger = players.find(p => p.uid === game.userId);
+  const opponents = players.filter(p => p.uid !== game.userId);
 
   return (
     <ScrollView style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -66,45 +69,84 @@ export default function GameDetailScreen({ gameId, onBack }: Props) {
       </View>
 
       <Text style={styles.sectionLabel}>Stats</Text>
-      <View style={styles.statsRow}>
+      <View style={styles.statsGrid}>
         <View style={styles.statBox}>
           <Text style={styles.statVal}>{game.capsMade}</Text>
           <Text style={styles.statLbl}>Caps Made</Text>
         </View>
-        <View style={styles.statBox}>
-          <Text style={styles.statVal}>{game.bounces}</Text>
-          <Text style={styles.statLbl}>Bounces</Text>
-        </View>
-        <View style={styles.statBox}>
-          <Text style={styles.statVal}>{game.rebuttals ?? 0}</Text>
-          <Text style={styles.statLbl}>Rebuttals</Text>
-        </View>
+        {(game.bounces > 0) && (
+          <View style={styles.statBox}>
+            <Text style={styles.statVal}>{game.bounces}</Text>
+            <Text style={styles.statLbl}>Bounces</Text>
+          </View>
+        )}
+        {((game.floaters ?? 0) > 0) && (
+          <View style={styles.statBox}>
+            <Text style={styles.statVal}>{game.floaters}</Text>
+            <Text style={styles.statLbl}>Floaters</Text>
+          </View>
+        )}
+        {((game.gameWinners ?? 0) > 0) && (
+          <View style={styles.statBox}>
+            <Text style={styles.statVal}>{game.gameWinners}</Text>
+            <Text style={styles.statLbl}>Game Winners</Text>
+          </View>
+        )}
+        {((game.rebuttals ?? 0) > 0) && (
+          <View style={styles.statBox}>
+            <Text style={styles.statVal}>{game.rebuttals}</Text>
+            <Text style={styles.statLbl}>Rebuttals</Text>
+          </View>
+        )}
         <View style={styles.statBox}>
           <Text style={styles.statVal}>{totalCaps}</Text>
           <Text style={styles.statLbl}>Total</Text>
         </View>
       </View>
 
-      <Text style={styles.sectionLabel}>Players</Text>
-      {players.map((p) => {
-        const isLogger = p.uid === game.userId;
-        const approved = game.approvals.includes(p.uid);
-        const rejected = game.rejections.includes(p.uid);
-        return (
-          <View key={p.uid} style={styles.playerRow}>
+      {logger && (
+        <>
+          <Text style={styles.sectionLabel}>Logged By</Text>
+          <View style={styles.playerRow}>
             <View style={styles.playerAvatar}>
-              <Text style={styles.playerAvatarText}>{p.displayName.charAt(0).toUpperCase()}</Text>
+              <Text style={styles.playerAvatarText}>{logger.displayName.charAt(0).toUpperCase()}</Text>
             </View>
             <View style={styles.playerInfo}>
-              <Text style={styles.playerName}>{p.displayName}</Text>
-              <Text style={styles.playerUsername}>@{p.username}</Text>
+              <Text style={styles.playerName}>{logger.displayName}</Text>
+              <Text style={styles.playerUsername}>@{logger.username}</Text>
             </View>
-            <Text style={styles.playerTag}>
-              {isLogger ? '📝 logged' : approved ? '✅ approved' : rejected ? '❌ rejected' : '⏳ pending'}
-            </Text>
           </View>
-        );
-      })}
+        </>
+      )}
+
+      {opponents.length > 0 && (
+        <>
+          <Text style={styles.sectionLabel}>Opponents</Text>
+          {opponents.map((p) => {
+            const approved = game.approvals.includes(p.uid);
+            const rejected = game.rejections.includes(p.uid);
+            return (
+              <TouchableOpacity
+                key={p.uid}
+                style={styles.playerRow}
+                onPress={() => onViewPlayer?.(p.uid)}
+                activeOpacity={onViewPlayer ? 0.7 : 1}
+              >
+                <View style={styles.playerAvatar}>
+                  <Text style={styles.playerAvatarText}>{p.displayName.charAt(0).toUpperCase()}</Text>
+                </View>
+                <View style={styles.playerInfo}>
+                  <Text style={styles.playerName}>{p.displayName}</Text>
+                  <Text style={styles.playerUsername}>@{p.username}</Text>
+                </View>
+                <Text style={styles.playerTag}>
+                  {approved ? '✅ verified' : rejected ? '❌ rejected' : '⏳ pending'}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </>
+      )}
 
       {game.notes ? (
         <>
@@ -140,7 +182,7 @@ const styles = StyleSheet.create({
   pending: { backgroundColor: '#1a1a2e', color: '#888' },
   rejected: { backgroundColor: '#2b0d0d', color: '#f44336' },
   sectionLabel: { color: '#888', fontSize: 12, fontWeight: '700', paddingHorizontal: 20, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
-  statsRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 24 },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, gap: 8, marginBottom: 24 },
   statBox: {
     flex: 1, backgroundColor: '#111d4a', borderRadius: 12, padding: 14,
     alignItems: 'center', borderWidth: 1, borderColor: '#1e2d6b',
