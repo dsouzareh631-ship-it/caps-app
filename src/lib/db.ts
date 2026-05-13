@@ -9,11 +9,11 @@ import {
   orderBy,
   updateDoc,
   addDoc,
-  increment,
   arrayUnion,
   arrayRemove,
   deleteDoc,
   Timestamp,
+  runTransaction,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Game, Group, LeaderboardEntry, User } from '../types';
@@ -255,40 +255,65 @@ export async function logGame(
 
 export async function approveGame(gameId: string, approverId: string) {
   const gameRef = doc(db, 'games', gameId);
+
+  // Pre-transaction reads: check eligibility before paying transaction cost
   const snap = await getDoc(gameRef);
   if (!snap.exists()) return;
-
   const game = snap.data() as Game;
   if (game.status !== 'pending') return;
   if (approverId === game.userId) return;
+  if (game.approvals.includes(approverId)) return;
 
-  await updateDoc(gameRef, {
-    status: 'verified',
-    approvals: arrayUnion(approverId),
-  });
+  // Compute correct win streak from all verified games sorted by date,
+  // including the game being approved now.
+  const verifiedSnap = await getDocs(
+    query(collection(db, 'games'), where('userId', '==', game.userId), where('status', '==', 'verified'))
+  );
+  const allVerified = [
+    ...verifiedSnap.docs.map((d) => d.data() as Game),
+    { ...game, status: 'verified' as const },
+  ].sort((a, b) => b.date - a.date);
 
-  // Update the game owner's aggregate stats + win streak
-  const userRef = doc(db, 'users', game.userId);
-  const userSnap = await getDoc(userRef);
-  const userData = userSnap.data() as User;
-
-  if (game.result === 'win') {
-    const newStreak = (userData.currentWinStreak ?? 0) + 1;
-    await updateDoc(userRef, {
-      totalCaps: increment(game.capsMade + game.bounces + (game.rebuttals ?? 0) + (game.floaters ?? 0) + (game.gameWinners ?? 0)),
-      totalGames: increment(1),
-      totalWins: increment(1),
-      currentWinStreak: newStreak,
-      bestWinStreak: Math.max(newStreak, userData.bestWinStreak ?? 0),
-    });
-  } else {
-    await updateDoc(userRef, {
-      totalCaps: increment(game.capsMade + game.bounces + (game.rebuttals ?? 0) + (game.floaters ?? 0) + (game.gameWinners ?? 0)),
-      totalGames: increment(1),
-      totalLosses: increment(1),
-      currentWinStreak: 0,
-    });
+  let streak = 0;
+  for (const g of allVerified) {
+    if (g.result === 'win') streak++;
+    else break;
   }
+
+  const capsAdded = game.capsMade + game.bounces + (game.rebuttals ?? 0) + (game.floaters ?? 0) + (game.gameWinners ?? 0);
+  const userRef = doc(db, 'users', game.userId);
+
+  await runTransaction(db, async (tx) => {
+    const gameSnap = await tx.get(gameRef);
+    const userSnap = await tx.get(userRef);
+    if (!gameSnap.exists() || !userSnap.exists()) return;
+
+    const g = gameSnap.data() as Game;
+    const u = userSnap.data() as User;
+
+    // Re-check inside transaction to prevent double-approval race
+    if (g.status !== 'pending') return;
+    if (g.approvals.includes(approverId)) return;
+
+    tx.update(gameRef, { status: 'verified', approvals: arrayUnion(approverId) });
+
+    if (game.result === 'win') {
+      tx.update(userRef, {
+        totalCaps: (u.totalCaps ?? 0) + capsAdded,
+        totalGames: (u.totalGames ?? 0) + 1,
+        totalWins: (u.totalWins ?? 0) + 1,
+        currentWinStreak: streak,
+        bestWinStreak: Math.max(streak, u.bestWinStreak ?? 0),
+      });
+    } else {
+      tx.update(userRef, {
+        totalCaps: (u.totalCaps ?? 0) + capsAdded,
+        totalGames: (u.totalGames ?? 0) + 1,
+        totalLosses: (u.totalLosses ?? 0) + 1,
+        currentWinStreak: streak,
+      });
+    }
+  });
 }
 
 export async function rejectGame(gameId: string, rejectorId: string) {
@@ -298,6 +323,7 @@ export async function rejectGame(gameId: string, rejectorId: string) {
 
   const game = snap.data() as Game;
   if (game.status !== 'pending') return;
+  if (rejectorId === game.userId) return;
 
   const newRejections = [...game.rejections, rejectorId];
   // Reject only if all tagged players (excluding the logger) have rejected
