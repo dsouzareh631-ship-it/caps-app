@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { signUp } from '../lib/auth';
+import { isUsernameTaken } from '../lib/db';
 
 interface Props {
   onNavigateToLogin: () => void;
@@ -34,9 +35,18 @@ export default function SignUpScreen({ onNavigateToLogin }: Props) {
       Alert.alert('Error', 'Password must be at least 6 characters.');
       return;
     }
+    const cleanUsername = username.trim().toLowerCase();
+    if (!/^[a-z0-9_]+$/.test(cleanUsername)) {
+      Alert.alert('Error', 'Username can only contain letters, numbers, and underscores.');
+      return;
+    }
     setLoading(true);
     try {
-      await signUp(email.trim(), password, displayName.trim(), username.trim().toLowerCase());
+      if (await isUsernameTaken(cleanUsername)) {
+        Alert.alert('Error', 'That username is already taken.');
+        return;
+      }
+      await signUp(email.trim(), password, displayName.trim(), cleanUsername);
     } catch (e: any) {
       Alert.alert('Sign Up Failed', e.message);
     } finally {

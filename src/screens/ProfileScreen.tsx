@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
-import { getUser, getUserGames, updateUserProfile, getHeadToHead } from '../lib/db';
+import { getUser, getUserGames, updateUserProfile, getHeadToHead, isUsernameTaken } from '../lib/db';
 import { logOut } from '../lib/auth';
 import { User, Game, Group } from '../types';
 
@@ -71,11 +71,20 @@ export default function ProfileScreen({ uid: viewUid, onBack, onViewGame, groups
       Alert.alert('Error', 'Name and username cannot be empty.');
       return;
     }
+    const cleanUsername = editUsername.trim().toLowerCase();
+    if (!/^[a-z0-9_]+$/.test(cleanUsername)) {
+      Alert.alert('Error', 'Username can only contain letters, numbers, and underscores.');
+      return;
+    }
     setSaving(true);
     try {
+      if (await isUsernameTaken(cleanUsername, user.uid)) {
+        Alert.alert('Error', 'That username is already taken.');
+        return;
+      }
       await updateUserProfile(user.uid, {
         displayName: editName.trim(),
-        username: editUsername.trim().toLowerCase(),
+        username: cleanUsername,
       });
       await load();
       setEditing(false);

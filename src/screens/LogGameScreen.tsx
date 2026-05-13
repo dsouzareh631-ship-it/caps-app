@@ -63,14 +63,30 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup }: Props)
     );
   }
 
+  function parseNonNegativeInt(val: string): number | null {
+    if (!val && val !== '0') return 0;
+    const n = Number(val);
+    if (!Number.isInteger(n) || n < 0) return null;
+    return n;
+  }
+
   async function handleSubmit() {
     if (!user) return;
     if (selectedPlayers.length === 0) {
       Alert.alert('Error', 'Select at least one other player.');
       return;
     }
-    if (!capsMade || isNaN(Number(capsMade))) {
-      Alert.alert('Error', 'Enter a valid number of caps made.');
+    const capsVal = parseNonNegativeInt(capsMade);
+    if (capsVal === null || (!capsMade && capsMade !== '0')) {
+      Alert.alert('Error', 'Enter a valid number of caps made (whole number, 0 or more).');
+      return;
+    }
+    const bouncesVal = parseNonNegativeInt(bounces);
+    const rebuttalsVal = parseNonNegativeInt(rebuttals);
+    const floatersVal = parseNonNegativeInt(floaters);
+    const gameWinnersVal = parseNonNegativeInt(gameWinners);
+    if (bouncesVal === null || rebuttalsVal === null || floatersVal === null || gameWinnersVal === null) {
+      Alert.alert('Error', 'All stat fields must be whole numbers (0 or more).');
       return;
     }
     if (!result) {
@@ -83,11 +99,11 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup }: Props)
       await logGame(
         user.uid,
         allPlayers,
-        Number(capsMade),
-        Number(bounces) || 0,
-        Number(rebuttals) || 0,
-        Number(floaters) || 0,
-        Number(gameWinners) || 0,
+        capsVal,
+        bouncesVal,
+        rebuttalsVal,
+        floatersVal,
+        gameWinnersVal,
         result,
         notes.trim(),
         gameDate.getTime()

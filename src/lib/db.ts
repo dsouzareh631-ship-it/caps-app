@@ -160,6 +160,11 @@ export async function getGroupPeriodLeaderboard(memberIds: string[], since: numb
   return entries.sort((a, b) => b.totalCaps - a.totalCaps);
 }
 
+export async function isUsernameTaken(username: string, excludeUid?: string): Promise<boolean> {
+  const snap = await getDocs(query(collection(db, 'users'), where('username', '==', username)));
+  return snap.docs.some((d) => d.id !== excludeUid);
+}
+
 export async function updateUserProfile(uid: string, fields: { displayName: string; username: string }) {
   await updateDoc(doc(db, 'users', uid), fields);
 }
@@ -255,6 +260,7 @@ export async function approveGame(gameId: string, approverId: string) {
 
   const game = snap.data() as Game;
   if (game.status !== 'pending') return;
+  if (approverId === game.userId) return;
 
   await updateDoc(gameRef, {
     status: 'verified',
