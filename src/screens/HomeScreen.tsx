@@ -106,17 +106,18 @@ export default function HomeScreen({ onLogGame, onViewVerifications, onViewGame,
     const groupGames = games.filter(g =>
       g.players.some(uid => uid !== user.uid && activeGroup.members.includes(uid))
     );
-    const caps = groupGames.reduce((sum, g) => sum + (g.capsMade ?? 0) + (g.bounces ?? 0) + (g.rebuttals ?? 0) + (g.floaters ?? 0) + (g.gameWinners ?? 0), 0);
-    const wins = groupGames.filter(g => g.result === 'win').length;
-    const losses = groupGames.filter(g => g.result === 'loss').length;
-    const sorted = [...groupGames].sort((a, b) => b.date - a.date);
+    const verifiedGroupGames = groupGames.filter(g => g.status === 'verified');
+    const caps = verifiedGroupGames.reduce((sum, g) => sum + (g.capsMade ?? 0) + (g.bounces ?? 0) + (g.rebuttals ?? 0) + (g.floaters ?? 0) + (g.gameWinners ?? 0), 0);
+    const wins = verifiedGroupGames.filter(g => g.result === 'win').length;
+    const losses = verifiedGroupGames.filter(g => g.result === 'loss').length;
+    const sorted = [...verifiedGroupGames].sort((a, b) => b.date - a.date);
     let streak = 0;
     for (const g of sorted) {
       if (g.result === 'win') streak++;
       else break;
     }
     setGroupTotalCaps(caps);
-    setGroupCPG(groupGames.length > 0 ? (caps / groupGames.length).toFixed(1) : '0.0');
+    setGroupCPG(verifiedGroupGames.length > 0 ? (caps / verifiedGroupGames.length).toFixed(1) : '0.0');
     setGroupRecord({ wins, losses });
     setGroupStreak(streak);
     setRecentGames(groupGames.slice(0, 5));

@@ -71,7 +71,7 @@ export default function LeaderboardScreen({ onViewPlayer, activeGroup, allGroups
     }
   }, [activeGroup]);
 
-  useEffect(() => { load(tab); }, [tab, load, activeGroup]);
+  useEffect(() => { load(tab); }, [tab, load]);
 
   async function onRefresh() {
     setRefreshing(true);

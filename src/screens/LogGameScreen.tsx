@@ -132,6 +132,10 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup }: Props)
       />
       {usersLoading ? (
         <ActivityIndicator color="#c9a844" style={{ marginVertical: 16 }} />
+      ) : allUsers.length === 0 ? (
+        <Text style={styles.noPlayersText}>No other members in this group yet. Share your invite code to add players.</Text>
+      ) : filtered.length === 0 && search.trim() ? (
+        <Text style={styles.noPlayersText}>No players found.</Text>
       ) : (
         filtered.map((u) => {
           const selected = selectedPlayers.includes(u.uid);
@@ -299,6 +303,7 @@ const styles = StyleSheet.create({
   playerName: { color: '#fff', fontWeight: '600', fontSize: 15, flex: 1 },
   playerUsername: { color: '#888', fontSize: 13, marginRight: 8 },
   checkmark: { color: '#c9a844', fontWeight: '800', fontSize: 16 },
+  noPlayersText: { color: '#555', fontSize: 14, textAlign: 'center', marginHorizontal: 16, marginVertical: 12 },
   input: {
     backgroundColor: '#111d4a',
     color: '#fff',

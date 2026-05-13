@@ -78,19 +78,44 @@ export async function getGroupMembers(memberIds: string[]): Promise<User[]> {
 }
 
 export async function getGroupLeaderboard(memberIds: string[]): Promise<LeaderboardEntry[]> {
-  const members = await getGroupMembers(memberIds);
-  return members
-    .map((u) => ({
-      uid: u.uid,
-      displayName: u.displayName,
-      username: u.username,
-      totalCaps: u.totalCaps,
-      totalGames: u.totalGames,
-      totalWins: u.totalWins,
-      totalLosses: u.totalLosses,
-      capsPerGame: u.totalGames > 0 ? u.totalCaps / u.totalGames : 0,
-    }))
-    .sort((a, b) => b.totalCaps - a.totalCaps);
+  const snap = await getDocs(
+    query(collection(db, 'games'), where('status', '==', 'verified'))
+  );
+  const memberSet = new Set(memberIds);
+  const games = snap.docs
+    .map((d) => d.data() as Game)
+    .filter((g) => memberSet.has(g.userId) && g.players.some((uid) => uid !== g.userId && memberSet.has(uid)));
+
+  const map = new Map<string, { caps: number; games: number; wins: number; losses: number }>();
+  for (const g of games) {
+    const existing = map.get(g.userId) ?? { caps: 0, games: 0, wins: 0, losses: 0 };
+    map.set(g.userId, {
+      caps: existing.caps + g.capsMade + g.bounces + (g.rebuttals ?? 0) + (g.floaters ?? 0) + (g.gameWinners ?? 0),
+      games: existing.games + 1,
+      wins: existing.wins + (g.result === 'win' ? 1 : 0),
+      losses: existing.losses + (g.result === 'loss' ? 1 : 0),
+    });
+  }
+
+  const userIds = Array.from(map.keys());
+  const users = await Promise.all(userIds.map((uid) => getUser(uid)));
+  const entries: LeaderboardEntry[] = [];
+  for (let i = 0; i < userIds.length; i++) {
+    const user = users[i];
+    if (!user) continue;
+    const stats = map.get(userIds[i])!;
+    entries.push({
+      uid: userIds[i],
+      displayName: user.displayName,
+      username: user.username,
+      totalCaps: stats.caps,
+      totalGames: stats.games,
+      totalWins: stats.wins,
+      totalLosses: stats.losses,
+      capsPerGame: stats.games > 0 ? stats.caps / stats.games : 0,
+    });
+  }
+  return entries.sort((a, b) => b.totalCaps - a.totalCaps);
 }
 
 export async function getGroupPeriodLeaderboard(memberIds: string[], since: number): Promise<LeaderboardEntry[]> {
@@ -98,7 +123,9 @@ export async function getGroupPeriodLeaderboard(memberIds: string[], since: numb
     query(collection(db, 'games'), where('status', '==', 'verified'), where('date', '>=', since))
   );
   const memberSet = new Set(memberIds);
-  const games = snap.docs.map((d) => d.data() as Game).filter((g) => memberSet.has(g.userId));
+  const games = snap.docs
+    .map((d) => d.data() as Game)
+    .filter((g) => memberSet.has(g.userId) && g.players.some((uid) => uid !== g.userId && memberSet.has(uid)));
 
   const map = new Map<string, { caps: number; games: number; wins: number; losses: number }>();
   for (const g of games) {
