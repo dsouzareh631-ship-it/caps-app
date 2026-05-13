@@ -7,8 +7,11 @@ import {
   TouchableOpacity,
   Alert,
   Clipboard,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { leaveGroup } from '../lib/db';
+import { useAuth } from '../hooks/useAuth';
 import { Group } from '../types';
 
 interface Props {
@@ -16,14 +19,43 @@ interface Props {
   activeGroupId: string;
   onSwitchGroup: (index: number) => void;
   onJoinOrCreate: () => void;
+  onLeaveGroup: (groupId: string) => void;
 }
 
-export default function GroupsScreen({ groups, activeGroupId, onSwitchGroup, onJoinOrCreate }: Props) {
+export default function GroupsScreen({ groups, activeGroupId, onSwitchGroup, onJoinOrCreate, onLeaveGroup }: Props) {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  const [leavingId, setLeavingId] = useState<string | null>(null);
 
   function copyCode(code: string) {
     Clipboard.setString(code);
     Alert.alert('Copied!', `Invite code ${code} copied to clipboard.`);
+  }
+
+  function confirmLeave(group: Group) {
+    Alert.alert(
+      'Leave Group',
+      `Are you sure you want to leave "${group.name}"?${group.members.length === 1 ? ' You are the only member — the group will be deleted.' : ''}`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Leave',
+          style: 'destructive',
+          onPress: async () => {
+            if (!user) return;
+            setLeavingId(group.id);
+            try {
+              await leaveGroup(group.id, user.uid);
+              onLeaveGroup(group.id);
+            } catch (e: any) {
+              Alert.alert('Error', e.message);
+            } finally {
+              setLeavingId(null);
+            }
+          },
+        },
+      ]
+    );
   }
 
   return (
@@ -59,6 +91,17 @@ export default function GroupsScreen({ groups, activeGroupId, onSwitchGroup, onJ
                   <Text style={styles.switchBtnText}>Switch to this group</Text>
                 </TouchableOpacity>
               )}
+
+              <TouchableOpacity
+                style={styles.leaveBtn}
+                onPress={() => confirmLeave(item)}
+                disabled={leavingId === item.id}
+              >
+                {leavingId === item.id
+                  ? <ActivityIndicator color="#f44336" size="small" />
+                  : <Text style={styles.leaveBtnText}>Leave Group</Text>
+                }
+              </TouchableOpacity>
             </View>
           );
         }}
@@ -111,6 +154,15 @@ const styles = StyleSheet.create({
     borderColor: '#c9a844',
   },
   switchBtnText: { color: '#c9a844', fontWeight: '600', fontSize: 14 },
+  leaveBtn: {
+    borderRadius: 10,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#f44336',
+    marginTop: 8,
+  },
+  leaveBtnText: { color: '#f44336', fontWeight: '600', fontSize: 14 },
   addBtn: {
     borderRadius: 12,
     padding: 16,

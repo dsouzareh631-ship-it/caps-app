@@ -14,15 +14,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
 import { getUser, getUserGames, updateUserProfile, getHeadToHead } from '../lib/db';
 import { logOut } from '../lib/auth';
-import { User, Game } from '../types';
+import { User, Game, Group } from '../types';
 
 interface Props {
   uid?: string;
   onBack?: () => void;
   onViewGame?: (gameId: string) => void;
+  groups?: Group[];
 }
 
-export default function ProfileScreen({ uid: viewUid, onBack, onViewGame }: Props) {
+export default function ProfileScreen({ uid: viewUid, onBack, onViewGame, groups }: Props) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const isOwnProfile = !viewUid || viewUid === user?.uid;
@@ -204,6 +205,9 @@ export default function ProfileScreen({ uid: viewUid, onBack, onViewGame }: Prop
       renderItem={({ item }) => {
         const totalCaps = item.capsMade + item.bounces;
         const date = new Date(item.date).toLocaleDateString();
+        const groupName = groups?.find(g =>
+          item.players.some(uid => uid !== targetUid && g.members.includes(uid))
+        )?.name ?? null;
         return (
           <TouchableOpacity style={styles.gameRow} onPress={() => onViewGame?.(item.id)} activeOpacity={onViewGame ? 0.7 : 1}>
             <View style={styles.gameLeft}>
@@ -215,6 +219,7 @@ export default function ProfileScreen({ uid: viewUid, onBack, onViewGame }: Prop
               {item.notes ? <Text style={styles.gameNotes}>"{item.notes}"</Text> : null}
             </View>
             <View style={styles.gameRight}>
+              {groupName && <Text style={styles.groupTag}>{groupName}</Text>}
               <Text style={[styles.gameResult, item.result === 'win' ? styles.win : styles.loss]}>
                 {item.result.toUpperCase()}
               </Text>
@@ -295,6 +300,7 @@ const styles = StyleSheet.create({
   bounceNote: { color: '#888', fontSize: 12, marginTop: 2 },
   gameNotes: { color: '#666', fontSize: 12, fontStyle: 'italic', marginTop: 4 },
   gameRight: { alignItems: 'flex-end', gap: 4 },
+  groupTag: { color: '#c9a844', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   gameResult: { fontWeight: '800', fontSize: 15 },
   win: { color: '#4caf50' },
   loss: { color: '#f44336' },

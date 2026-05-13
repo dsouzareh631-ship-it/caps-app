@@ -11,6 +11,8 @@ import {
   addDoc,
   increment,
   arrayUnion,
+  arrayRemove,
+  deleteDoc,
   Timestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -53,6 +55,23 @@ export async function getUserGroups(userId: string): Promise<Group[]> {
   return groups.filter(Boolean) as Group[];
 }
 
+export async function leaveGroup(groupId: string, userId: string): Promise<void> {
+  const groupRef = doc(db, 'groups', groupId);
+  const groupSnap = await getDoc(groupRef);
+  if (!groupSnap.exists()) throw new Error('Group not found.');
+
+  const group = groupSnap.data() as Group;
+  const remainingMembers = group.members.filter((uid) => uid !== userId);
+
+  await updateDoc(doc(db, 'users', userId), { groupIds: arrayRemove(groupId) });
+
+  if (remainingMembers.length === 0) {
+    await deleteDoc(groupRef);
+  } else {
+    await updateDoc(groupRef, { members: remainingMembers });
+  }
+}
+
 export async function getGroupMembers(memberIds: string[]): Promise<User[]> {
   const users = await Promise.all(memberIds.map((uid) => getUser(uid)));
   return users.filter(Boolean) as User[];
@@ -85,7 +104,7 @@ export async function getGroupPeriodLeaderboard(memberIds: string[], since: numb
   for (const g of games) {
     const existing = map.get(g.userId) ?? { caps: 0, games: 0, wins: 0, losses: 0 };
     map.set(g.userId, {
-      caps: existing.caps + g.capsMade + g.bounces,
+      caps: existing.caps + g.capsMade + g.bounces + (g.floaters ?? 0) + (g.gameWinners ?? 0),
       games: existing.games + 1,
       wins: existing.wins + (g.result === 'win' ? 1 : 0),
       losses: existing.losses + (g.result === 'loss' ? 1 : 0),
@@ -177,6 +196,8 @@ export async function logGame(
   capsMade: number,
   bounces: number,
   rebuttals: number,
+  floaters: number,
+  gameWinners: number,
   result: 'win' | 'loss',
   notes: string,
   date: number
@@ -187,6 +208,8 @@ export async function logGame(
     capsMade,
     bounces,
     rebuttals,
+    floaters,
+    gameWinners,
     result,
     notes,
     date,
@@ -219,7 +242,7 @@ export async function approveGame(gameId: string, approverId: string) {
   if (game.result === 'win') {
     const newStreak = (userData.currentWinStreak ?? 0) + 1;
     await updateDoc(userRef, {
-      totalCaps: increment(game.capsMade + game.bounces + (game.rebuttals ?? 0)),
+      totalCaps: increment(game.capsMade + game.bounces + (game.rebuttals ?? 0) + (game.floaters ?? 0) + (game.gameWinners ?? 0)),
       totalGames: increment(1),
       totalWins: increment(1),
       currentWinStreak: newStreak,
@@ -227,7 +250,7 @@ export async function approveGame(gameId: string, approverId: string) {
     });
   } else {
     await updateDoc(userRef, {
-      totalCaps: increment(game.capsMade + game.bounces + (game.rebuttals ?? 0)),
+      totalCaps: increment(game.capsMade + game.bounces + (game.rebuttals ?? 0) + (game.floaters ?? 0) + (game.gameWinners ?? 0)),
       totalGames: increment(1),
       totalLosses: increment(1),
       currentWinStreak: 0,
@@ -308,7 +331,7 @@ export async function getPeriodLeaderboard(since: number): Promise<LeaderboardEn
   for (const g of games) {
     const existing = map.get(g.userId) ?? { caps: 0, games: 0, wins: 0, losses: 0 };
     map.set(g.userId, {
-      caps: existing.caps + g.capsMade + g.bounces,
+      caps: existing.caps + g.capsMade + g.bounces + (g.floaters ?? 0) + (g.gameWinners ?? 0),
       games: existing.games + 1,
       wins: existing.wins + (g.result === 'win' ? 1 : 0),
       losses: existing.losses + (g.result === 'loss' ? 1 : 0),
@@ -380,7 +403,7 @@ export async function getAchievements(memberIds: string[]): Promise<Achievements
     s.games += 1;
     s.wins += g.result === 'win' ? 1 : 0;
     s.losses += g.result === 'loss' ? 1 : 0;
-    s.caps += (g.capsMade ?? 0) + (g.bounces ?? 0) + (g.rebuttals ?? 0);
+    s.caps += (g.capsMade ?? 0) + (g.bounces ?? 0) + (g.rebuttals ?? 0) + (g.floaters ?? 0) + (g.gameWinners ?? 0);
     s.results.push({ date: g.date, result: g.result });
   }
 

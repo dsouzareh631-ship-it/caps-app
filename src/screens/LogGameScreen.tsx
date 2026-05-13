@@ -29,8 +29,10 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup }: Props)
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [capsMade, setCapsMade] = useState('');
-  const [bounces, setBounces] = useState('0');
-  const [rebuttals, setRebuttals] = useState('0');
+  const [bounces, setBounces] = useState('');
+  const [rebuttals, setRebuttals] = useState('');
+  const [floaters, setFloaters] = useState('');
+  const [gameWinners, setGameWinners] = useState('');
   const [result, setResult] = useState<'win' | 'loss' | null>(null);
   const [notes, setNotes] = useState('');
   const [gameDate, setGameDate] = useState(new Date());
@@ -84,6 +86,8 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup }: Props)
         Number(capsMade),
         Number(bounces) || 0,
         Number(rebuttals) || 0,
+        Number(floaters) || 0,
+        Number(gameWinners) || 0,
         result,
         notes.trim(),
         gameDate.getTime()
@@ -156,7 +160,7 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup }: Props)
         onChangeText={setCapsMade}
       />
 
-      <Text style={styles.sectionLabel}>Bounces (cap in via bounce)</Text>
+      <Text style={styles.sectionLabel}>Bounces Made (caps bounce in)</Text>
       <TextInput
         style={styles.input}
         placeholder="0"
@@ -164,6 +168,26 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup }: Props)
         keyboardType="number-pad"
         value={bounces}
         onChangeText={setBounces}
+      />
+
+      <Text style={styles.sectionLabel}>Floaters (cap lands floating on top)</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="0"
+        placeholderTextColor="#888"
+        keyboardType="number-pad"
+        value={floaters}
+        onChangeText={setFloaters}
+      />
+
+      <Text style={styles.sectionLabel}>Game Winners (cap lands on back handle)</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="0"
+        placeholderTextColor="#888"
+        keyboardType="number-pad"
+        value={gameWinners}
+        onChangeText={setGameWinners}
       />
 
       <Text style={styles.sectionLabel}>Rebuttals Made</Text>

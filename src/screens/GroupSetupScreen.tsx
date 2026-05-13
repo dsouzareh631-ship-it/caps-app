@@ -12,14 +12,16 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
+import { logOut } from '../lib/auth';
 import { createGroup, joinGroupByCode } from '../lib/db';
 import { Group } from '../types';
 
 interface Props {
   onDone: (group: Group) => void;
+  onBack?: () => void;
 }
 
-export default function GroupSetupScreen({ onDone }: Props) {
+export default function GroupSetupScreen({ onDone, onBack }: Props) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [mode, setMode] = useState<'create' | 'join'>('create');
@@ -89,6 +91,11 @@ export default function GroupSetupScreen({ onDone }: Props) {
       contentContainerStyle={styles.inner}
       keyboardShouldPersistTaps="handled"
     >
+        {onBack && (
+          <TouchableOpacity onPress={onBack} style={styles.backBtn}>
+            <Text style={styles.backBtnText}>← Back</Text>
+          </TouchableOpacity>
+        )}
         <Text style={styles.title}>Join the Game</Text>
         <Text style={styles.subtitle}>Create a group or join one with an invite code.</Text>
 
@@ -137,6 +144,12 @@ export default function GroupSetupScreen({ onDone }: Props) {
               {loading ? <ActivityIndicator color="#000" /> : <Text style={styles.buttonText}>Join Group</Text>}
             </TouchableOpacity>
           </>
+        )}
+
+        {!onBack && (
+          <TouchableOpacity style={styles.signOutBtn} onPress={logOut}>
+            <Text style={styles.signOutText}>Sign Out</Text>
+          </TouchableOpacity>
         )}
     </ScrollView>
   );
@@ -196,4 +209,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   copyBtnText: { color: '#c9a844', fontWeight: '700', fontSize: 15 },
+  backBtn: { marginBottom: 16 },
+  backBtnText: { color: '#c9a844', fontSize: 16, fontWeight: '600' },
+  signOutBtn: { marginTop: 32, alignItems: 'center', padding: 12 },
+  signOutText: { color: '#555', fontSize: 14, fontWeight: '600' },
 });

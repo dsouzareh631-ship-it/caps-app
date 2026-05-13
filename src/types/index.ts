@@ -29,6 +29,8 @@ export interface Game {
   capsMade: number;
   bounces: number;
   rebuttals: number;
+  floaters: number;
+  gameWinners: number;
   result: 'win' | 'loss';
   notes: string;
   players: string[];

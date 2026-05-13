@@ -87,6 +87,10 @@ export default function HomeScreen({ onLogGame, onViewVerifications, onViewGame,
   const { user } = useAuth();
   const [profile, setProfile] = useState<User | null>(null);
   const [recentGames, setRecentGames] = useState<Game[]>([]);
+  const [groupTotalCaps, setGroupTotalCaps] = useState(0);
+  const [groupCPG, setGroupCPG] = useState('0.0');
+  const [groupRecord, setGroupRecord] = useState({ wins: 0, losses: 0 });
+  const [groupStreak, setGroupStreak] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -102,6 +106,19 @@ export default function HomeScreen({ onLogGame, onViewVerifications, onViewGame,
     const groupGames = games.filter(g =>
       g.players.some(uid => uid !== user.uid && activeGroup.members.includes(uid))
     );
+    const caps = groupGames.reduce((sum, g) => sum + (g.capsMade ?? 0) + (g.bounces ?? 0) + (g.rebuttals ?? 0) + (g.floaters ?? 0) + (g.gameWinners ?? 0), 0);
+    const wins = groupGames.filter(g => g.result === 'win').length;
+    const losses = groupGames.filter(g => g.result === 'loss').length;
+    const sorted = [...groupGames].sort((a, b) => b.date - a.date);
+    let streak = 0;
+    for (const g of sorted) {
+      if (g.result === 'win') streak++;
+      else break;
+    }
+    setGroupTotalCaps(caps);
+    setGroupCPG(groupGames.length > 0 ? (caps / groupGames.length).toFixed(1) : '0.0');
+    setGroupRecord({ wins, losses });
+    setGroupStreak(streak);
     setRecentGames(groupGames.slice(0, 5));
     setPendingCount(pending.length);
   }, [user, activeGroup]);
@@ -124,10 +141,6 @@ export default function HomeScreen({ onLogGame, onViewVerifications, onViewGame,
     );
   }
 
-  const cpg =
-    profile && profile.totalGames > 0
-      ? (profile.totalCaps / profile.totalGames).toFixed(1)
-      : '0.0';
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -150,10 +163,10 @@ export default function HomeScreen({ onLogGame, onViewVerifications, onViewGame,
             </View>
 
             <View style={styles.statsRow}>
-              <StatCard label="Total Caps" value={String(profile?.totalCaps ?? 0)} />
-              <StatCard label="CPG" value={cpg} />
-              <StatCard label="Record" value={`${profile?.totalWins ?? 0}W-${profile?.totalLosses ?? 0}L`} />
-              <StatCard label="Streak 🔥" value={String(profile?.currentWinStreak ?? 0)} />
+              <StatCard label="Total Caps" value={String(groupTotalCaps)} />
+              <StatCard label="CPG" value={groupCPG} />
+              <StatCard label="Record" value={`${groupRecord.wins}W-${groupRecord.losses}L`} />
+              <StatCard label="Streak 🔥" value={String(groupStreak)} />
             </View>
 
             {pendingCount > 0 && (

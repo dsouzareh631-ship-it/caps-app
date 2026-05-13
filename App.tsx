@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -47,6 +47,7 @@ function MainTabs({
   onSwitchGroup,
   onSwitchGroupIndex,
   onJoinOrCreate,
+  onLeaveGroup,
 }: {
   onLogGame: () => void;
   onViewVerifications: () => void;
@@ -58,6 +59,7 @@ function MainTabs({
   onSwitchGroup: () => void;
   onSwitchGroupIndex: (index: number) => void;
   onJoinOrCreate: () => void;
+  onLeaveGroup: (groupId: string) => void;
 }) {
   return (
     <Tab.Navigator
@@ -105,11 +107,12 @@ function MainTabs({
             activeGroupId={activeGroup.id}
             onSwitchGroup={onSwitchGroupIndex}
             onJoinOrCreate={onJoinOrCreate}
+            onLeaveGroup={onLeaveGroup}
           />
         )}
       </Tab.Screen>
       <Tab.Screen name="Profile">
-        {() => <ProfileScreen onViewGame={onViewGame} />}
+        {() => <ProfileScreen onViewGame={onViewGame} groups={allGroups} />}
       </Tab.Screen>
     </Tab.Navigator>
   );
@@ -129,6 +132,7 @@ export default function App() {
   const [viewingPlayer, setViewingPlayer] = useState<string | null>(null);
   const [viewingGame, setViewingGame] = useState<string | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
+  const prevGroupsRef = useRef<Group[]>([]);
   const [activeGroupIndex, setActiveGroupIndex] = useState(0);
   const [groupsLoading, setGroupsLoading] = useState(true);
   const [showGroupSwitcher, setShowGroupSwitcher] = useState(false);
@@ -170,13 +174,20 @@ export default function App() {
   }
 
   if (groups.length === 0) {
+    const hadGroups = prevGroupsRef.current.length > 0;
     return (
       <SafeAreaProvider>
         <GroupSetupScreen
           onDone={(group) => {
-            setGroups([group]);
-            setActiveGroupIndex(0);
+            const next = [...prevGroupsRef.current, group];
+            setGroups(next);
+            setActiveGroupIndex(next.length - 1);
+            prevGroupsRef.current = [];
           }}
+          onBack={hadGroups ? () => {
+            setGroups(prevGroupsRef.current);
+            prevGroupsRef.current = [];
+          } : undefined}
         />
       </SafeAreaProvider>
     );
@@ -219,6 +230,7 @@ export default function App() {
           uid={viewingPlayer}
           onBack={() => setViewingPlayer(null)}
           onViewGame={(gameId) => setViewingGame(gameId)}
+          groups={groups}
         />
       </SafeAreaProvider>
     );
@@ -237,7 +249,12 @@ export default function App() {
           activeGroupIndex={activeGroupIndex}
           onSwitchGroup={() => setShowGroupSwitcher(true)}
           onSwitchGroupIndex={(index) => setActiveGroupIndex(index)}
-          onJoinOrCreate={() => setGroups([])}
+          onJoinOrCreate={() => { prevGroupsRef.current = groups; setGroups([]); }}
+          onLeaveGroup={(groupId: string) => {
+            const next = groups.filter((g) => g.id !== groupId);
+            setGroups(next);
+            setActiveGroupIndex((prev) => Math.min(prev, Math.max(0, next.length - 1)));
+          }}
         />
       </NavigationContainer>
       <Modal visible={showGroupSwitcher} transparent animationType="fade" onRequestClose={() => setShowGroupSwitcher(false)}>
@@ -264,6 +281,7 @@ export default function App() {
               style={styles.switcherJoin}
               onPress={() => {
                 setShowGroupSwitcher(false);
+                prevGroupsRef.current = groups;
                 setGroups([]);
               }}
             >
