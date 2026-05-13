@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
 import { getUser, getUserGames, updateUserProfile, getHeadToHead, isUsernameTaken } from '../lib/db';
-import { logOut } from '../lib/auth';
+import { logOut, deleteAccount } from '../lib/auth';
 import { User, Game, Group } from '../types';
 
 interface Props {
@@ -100,6 +100,40 @@ export default function ProfileScreen({ uid: viewUid, onBack, onViewGame, groups
       { text: 'Cancel', style: 'cancel' },
       { text: 'Log Out', style: 'destructive', onPress: () => logOut() },
     ]);
+  }
+
+  async function handleDeleteAccount() {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and remove you from all groups. Your logged games will remain for other players. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: () =>
+            Alert.alert('Are you sure?', 'There is no way to recover your account after this.', [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Yes, Delete',
+                style: 'destructive',
+                onPress: async () => {
+                  if (!user) return;
+                  try {
+                    await deleteAccount(user.uid);
+                  } catch (e: any) {
+                    if (e.code === 'auth/requires-recent-login') {
+                      Alert.alert('Session Expired', 'Please log out and log back in, then try again.');
+                    } else {
+                      Alert.alert('Error', e.message);
+                    }
+                  }
+                },
+              },
+            ]),
+        },
+      ]
+    );
   }
 
   if (loading) {
@@ -242,9 +276,14 @@ export default function ProfileScreen({ uid: viewUid, onBack, onViewGame, groups
       ListEmptyComponent={<Text style={styles.emptyText}>No games logged yet.</Text>}
       ListFooterComponent={
         isOwnProfile ? (
-          <TouchableOpacity style={styles.logOutButton} onPress={handleLogOut}>
-            <Text style={styles.logOutText}>Log Out</Text>
-          </TouchableOpacity>
+          <View>
+            <TouchableOpacity style={styles.logOutButton} onPress={handleLogOut}>
+              <Text style={styles.logOutText}>Log Out</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.deleteAccountButton} onPress={handleDeleteAccount}>
+              <Text style={styles.deleteAccountText}>Delete Account</Text>
+            </TouchableOpacity>
+          </View>
         ) : null
       }
     />
@@ -318,6 +357,8 @@ const styles = StyleSheet.create({
   verifiedText: { color: '#4caf50' },
   rejectedText: { color: '#f44336' },
   emptyText: { color: '#555', textAlign: 'center', marginTop: 30, fontSize: 15 },
-  logOutButton: { margin: 24, borderRadius: 12, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: '#333' },
+  logOutButton: { marginHorizontal: 24, marginTop: 24, marginBottom: 8, borderRadius: 12, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: '#333' },
   logOutText: { color: '#888', fontWeight: '600', fontSize: 15 },
+  deleteAccountButton: { marginHorizontal: 24, marginBottom: 40, borderRadius: 12, padding: 16, alignItems: 'center' },
+  deleteAccountText: { color: '#f44336', fontWeight: '600', fontSize: 14 },
 });
