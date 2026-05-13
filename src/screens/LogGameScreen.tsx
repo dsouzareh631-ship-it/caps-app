@@ -108,7 +108,10 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup }: Props)
         notes.trim(),
         gameDate.getTime()
       );
-      Alert.alert('Game Logged!', 'Waiting for a player to verify your stats.');
+      const names = selectedPlayers
+        .map((uid) => allUsers.find((u) => u.uid === uid)?.displayName ?? 'them')
+        .join(', ');
+      Alert.alert('Game Logged!', `Verification requests have been sent to ${names}.`);
       onSuccess();
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -135,8 +138,11 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup }: Props)
       </View>
 
       {/* Player Selection */}
-      <Text style={styles.sectionLabel}>
-        {search.trim() ? `Search results` : `Recent teammates`} ({selectedPlayers.length}/3 selected)
+      <Text style={styles.sectionLabel}>Teammates / Opponents</Text>
+      <Text style={styles.sectionHint}>
+        {selectedPlayers.length === 0
+          ? 'Select 1–3 players — they\'ll receive a verification request'
+          : `${selectedPlayers.length} selected${selectedPlayers.length < 3 ? ' — tap to add more' : ' — max reached'}`}
       </Text>
       <TextInput
         style={styles.searchInput}
@@ -292,7 +298,8 @@ const styles = StyleSheet.create({
   header: { padding: 24, paddingBottom: 8 },
   backButton: { color: '#c9a844', fontSize: 16, marginBottom: 12 },
   title: { fontSize: 28, fontWeight: '800', color: '#fff' },
-  sectionLabel: { color: '#888', fontSize: 13, fontWeight: '600', paddingHorizontal: 20, marginTop: 22, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionLabel: { color: '#888', fontSize: 13, fontWeight: '600', paddingHorizontal: 20, marginTop: 22, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionHint: { color: '#555', fontSize: 12, paddingHorizontal: 20, marginBottom: 10 },
   searchInput: {
     backgroundColor: '#111d4a',
     color: '#fff',
