@@ -5,7 +5,13 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "plugins": [
-      ["expo-notifications", { "icon": "./assets/icon.png", "color": "#c9a844" }]
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#c9a844"
+        }
+      ]
     ],
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -30,6 +36,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "da752448-0c00-40c5-8535-dc4bdf60d765"
+      }
     }
   }
 }
