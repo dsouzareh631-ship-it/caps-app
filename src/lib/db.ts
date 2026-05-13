@@ -2,6 +2,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  setDoc,
   collection,
   query,
   where,
@@ -13,7 +14,105 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Game, LeaderboardEntry, User } from '../types';
+import { Game, Group, LeaderboardEntry, User } from '../types';
+
+function randomCode(length = 6): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let result = '';
+  for (let i = 0; i < length; i++) result += chars[Math.floor(Math.random() * chars.length)];
+  return result;
+}
+
+export async function createGroup(name: string, userId: string): Promise<Group> {
+  const code = randomCode();
+  const ref = doc(collection(db, 'groups'));
+  const group: Group = { id: ref.id, name, code, createdBy: userId, members: [userId], createdAt: Date.now() };
+  await setDoc(ref, group);
+  await updateDoc(doc(db, 'users', userId), { groupIds: arrayUnion(ref.id) });
+  return group;
+}
+
+export async function joinGroupByCode(code: string, userId: string): Promise<Group> {
+  const snap = await getDocs(query(collection(db, 'groups'), where('code', '==', code.toUpperCase())));
+  if (snap.empty) throw new Error('No group found with that code.');
+  const groupDoc = snap.docs[0];
+  const group = { id: groupDoc.id, ...groupDoc.data() } as Group;
+  if (group.members.includes(userId)) throw new Error('You are already in this group.');
+  await updateDoc(doc(db, 'groups', group.id), { members: arrayUnion(userId) });
+  await updateDoc(doc(db, 'users', userId), { groupIds: arrayUnion(group.id) });
+  return { ...group, members: [...group.members, userId] };
+}
+
+export async function getUserGroups(userId: string): Promise<Group[]> {
+  const user = await getUser(userId);
+  if (!user || !user.groupIds?.length) return [];
+  const groups = await Promise.all(user.groupIds.map(async (id) => {
+    const snap = await getDoc(doc(db, 'groups', id));
+    return snap.exists() ? ({ id: snap.id, ...snap.data() } as Group) : null;
+  }));
+  return groups.filter(Boolean) as Group[];
+}
+
+export async function getGroupMembers(memberIds: string[]): Promise<User[]> {
+  const users = await Promise.all(memberIds.map((uid) => getUser(uid)));
+  return users.filter(Boolean) as User[];
+}
+
+export async function getGroupLeaderboard(memberIds: string[]): Promise<LeaderboardEntry[]> {
+  const members = await getGroupMembers(memberIds);
+  return members
+    .map((u) => ({
+      uid: u.uid,
+      displayName: u.displayName,
+      username: u.username,
+      totalCaps: u.totalCaps,
+      totalGames: u.totalGames,
+      totalWins: u.totalWins,
+      totalLosses: u.totalLosses,
+      capsPerGame: u.totalGames > 0 ? u.totalCaps / u.totalGames : 0,
+    }))
+    .sort((a, b) => b.totalCaps - a.totalCaps);
+}
+
+export async function getGroupPeriodLeaderboard(memberIds: string[], since: number): Promise<LeaderboardEntry[]> {
+  const snap = await getDocs(
+    query(collection(db, 'games'), where('status', '==', 'verified'), where('date', '>=', since))
+  );
+  const memberSet = new Set(memberIds);
+  const games = snap.docs.map((d) => d.data() as Game).filter((g) => memberSet.has(g.userId));
+
+  const map = new Map<string, { caps: number; games: number; wins: number; losses: number }>();
+  for (const g of games) {
+    const existing = map.get(g.userId) ?? { caps: 0, games: 0, wins: 0, losses: 0 };
+    map.set(g.userId, {
+      caps: existing.caps + g.capsMade + g.bounces,
+      games: existing.games + 1,
+      wins: existing.wins + (g.result === 'win' ? 1 : 0),
+      losses: existing.losses + (g.result === 'loss' ? 1 : 0),
+    });
+  }
+
+  const userIds = Array.from(map.keys());
+  const users = await Promise.all(userIds.map((uid) => getUser(uid)));
+  const entries: LeaderboardEntry[] = [];
+  for (let i = 0; i < userIds.length; i++) {
+    const user = users[i];
+    if (!user) continue;
+    const uid = userIds[i];
+    const stats = map.get(uid)!;
+    entries.push({
+      uid,
+      displayName: user.displayName,
+      username: user.username,
+      totalCaps: stats.caps,
+      totalGames: stats.games,
+      totalWins: stats.wins,
+      totalLosses: stats.losses,
+      capsPerGame: stats.games > 0 ? stats.caps / stats.games : 0,
+    });
+  }
+  return entries.sort((a, b) => b.totalCaps - a.totalCaps);
+}
 
 export async function updateUserProfile(uid: string, fields: { displayName: string; username: string }) {
   await updateDoc(doc(db, 'users', uid), fields);
@@ -246,54 +345,80 @@ export interface Achievements {
   hotStreak: { username: string; displayName: string; total: number } | null;
   sharpShooter: { username: string; displayName: string; total: number } | null;
   ironman: { username: string; displayName: string; total: number } | null;
+  burger: { username: string; displayName: string; total: number } | null;
 }
 
-export async function getAchievements(): Promise<Achievements> {
+type GroupStats = {
+  rebuttals: number;
+  bounces: number;
+  games: number;
+  wins: number;
+  losses: number;
+  caps: number;
+  results: { date: number; result: 'win' | 'loss' }[];
+};
+
+export async function getAchievements(memberIds: string[]): Promise<Achievements> {
   const snap = await getDocs(
     query(collection(db, 'games'), where('status', '==', 'verified'))
   );
 
-  const rebuttalsMap = new Map<string, number>();
-  const bouncesMap = new Map<string, number>();
+  // Only count games where the logger AND at least one opponent are both group members
+  const statsMap = new Map<string, GroupStats>();
 
   for (const d of snap.docs) {
     const g = d.data() as Game;
-    rebuttalsMap.set(g.userId, (rebuttalsMap.get(g.userId) ?? 0) + (g.rebuttals ?? 0));
-    bouncesMap.set(g.userId, (bouncesMap.get(g.userId) ?? 0) + (g.bounces ?? 0));
+    if (!memberIds.includes(g.userId)) continue;
+    if (!g.players.some(uid => uid !== g.userId && memberIds.includes(uid))) continue;
+
+    if (!statsMap.has(g.userId)) {
+      statsMap.set(g.userId, { rebuttals: 0, bounces: 0, games: 0, wins: 0, losses: 0, caps: 0, results: [] });
+    }
+    const s = statsMap.get(g.userId)!;
+    s.rebuttals += g.rebuttals ?? 0;
+    s.bounces += g.bounces ?? 0;
+    s.games += 1;
+    s.wins += g.result === 'win' ? 1 : 0;
+    s.losses += g.result === 'loss' ? 1 : 0;
+    s.caps += (g.capsMade ?? 0) + (g.bounces ?? 0) + (g.rebuttals ?? 0);
+    s.results.push({ date: g.date, result: g.result });
   }
 
-  async function topUser(map: Map<string, number>) {
-    if (map.size === 0) return null;
-    const [topUid, total] = [...map.entries()].sort((a, b) => b[1] - a[1])[0];
-    const user = await getUser(topUid);
+  function currentStreak(results: GroupStats['results']): number {
+    const sorted = [...results].sort((a, b) => b.date - a.date);
+    let streak = 0;
+    for (const r of sorted) {
+      if (r.result === 'win') streak++;
+      else break;
+    }
+    return streak;
+  }
+
+  async function topFromMap(
+    pick: (s: GroupStats) => number,
+    minGames = 0
+  ): Promise<{ username: string; displayName: string; total: number } | null> {
+    let bestUid: string | null = null;
+    let bestVal = -1;
+    for (const [uid, s] of statsMap.entries()) {
+      if (s.games < minGames) continue;
+      const val = pick(s);
+      if (val > bestVal) { bestVal = val; bestUid = uid; }
+    }
+    if (!bestUid || bestVal <= 0) return null;
+    const user = await getUser(bestUid);
     if (!user) return null;
-    return { username: user.username, displayName: user.displayName, total };
+    return { username: user.username, displayName: user.displayName, total: bestVal };
   }
 
-  const [mrRebuttal, bounceMerchant] = await Promise.all([
-    topUser(rebuttalsMap),
-    topUser(bouncesMap),
+  const [mrRebuttal, bounceMerchant, hotStreak, ironman, burger, sharpShooter] = await Promise.all([
+    topFromMap(s => s.rebuttals),
+    topFromMap(s => s.bounces),
+    topFromMap(s => currentStreak(s.results)),
+    topFromMap(s => s.games),
+    topFromMap(s => s.losses),
+    topFromMap(s => Math.round((s.caps / s.games) * 10) / 10, 3),
   ]);
 
-  // Achievements from users collection
-  const usersSnap = await getDocs(collection(db, 'users'));
-  const allUsers = usersSnap.docs.map((d) => d.data() as User);
-
-  function topUserFrom(pick: (u: User) => number, minGames = 0) {
-    const eligible = allUsers.filter((u) => (u.totalGames ?? 0) >= minGames);
-    if (eligible.length === 0) return null;
-    const best = eligible.reduce((a, b) => (pick(a) >= pick(b) ? a : b));
-    const val = pick(best);
-    if (val <= 0) return null;
-    return { username: best.username, displayName: best.displayName, total: val };
-  }
-
-  const hotStreak = topUserFrom((u) => u.currentWinStreak ?? 0);
-  const sharpShooter = topUserFrom(
-    (u) => Math.round((u.totalCaps / u.totalGames) * 10) / 10,
-    3
-  );
-  const ironman = topUserFrom((u) => u.totalGames ?? 0);
-
-  return { mrRebuttal, bounceMerchant, hotStreak, sharpShooter, ironman };
+  return { mrRebuttal, bounceMerchant, hotStreak, sharpShooter, ironman, burger };
 }

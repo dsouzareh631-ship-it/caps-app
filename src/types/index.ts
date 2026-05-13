@@ -10,6 +10,16 @@ export interface User {
   totalLosses: number;
   currentWinStreak: number;
   bestWinStreak: number;
+  groupIds: string[];
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  code: string;
+  createdBy: string;
+  members: string[];
+  createdAt: number;
 }
 
 export interface Game {

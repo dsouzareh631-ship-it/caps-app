@@ -10,17 +10,19 @@ import {
   ActivityIndicator,
   FlatList,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
-import { getAllUsers, getRecentTeammates, logGame } from '../lib/db';
-import { User } from '../types';
+import { getGroupMembers, getRecentTeammates, logGame } from '../lib/db';
+import { Group, User } from '../types';
 
 interface Props {
   onSuccess: () => void;
   onBack: () => void;
+  activeGroup: Group;
 }
 
-export default function LogGameScreen({ onSuccess, onBack }: Props) {
+export default function LogGameScreen({ onSuccess, onBack, activeGroup }: Props) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [recentUsers, setRecentUsers] = useState<User[]>([]);
@@ -31,24 +33,27 @@ export default function LogGameScreen({ onSuccess, onBack }: Props) {
   const [rebuttals, setRebuttals] = useState('0');
   const [result, setResult] = useState<'win' | 'loss' | null>(null);
   const [notes, setNotes] = useState('');
+  const [gameDate, setGameDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [usersLoading, setUsersLoading] = useState(true);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
     if (!user) return;
+    const otherMemberIds = activeGroup.members.filter((id) => id !== user.uid);
     Promise.all([
       getRecentTeammates(user.uid, 5),
-      getAllUsers(),
-    ]).then(([recent, all]) => {
-      setRecentUsers(recent);
-      setAllUsers(all.filter((u) => u.uid !== user.uid));
+      getGroupMembers(otherMemberIds),
+    ]).then(([recent, members]) => {
+      setAllUsers(members);
+      setRecentUsers(recent.filter((u) => otherMemberIds.includes(u.uid)));
     }).catch((e) => {
       console.error('LogGame users load error:', e);
     }).finally(() => {
       setUsersLoading(false);
     });
-  }, [user]);
+  }, [user, activeGroup]);
 
   function togglePlayer(uid: string) {
     setSelectedPlayers((prev) =>
@@ -81,7 +86,7 @@ export default function LogGameScreen({ onSuccess, onBack }: Props) {
         Number(rebuttals) || 0,
         result,
         notes.trim(),
-        Date.now()
+        gameDate.getTime()
       );
       Alert.alert('Game Logged!', 'Waiting for a player to verify your stats.');
       onSuccess();
@@ -188,6 +193,32 @@ export default function LogGameScreen({ onSuccess, onBack }: Props) {
         </TouchableOpacity>
       </View>
 
+      {/* Date */}
+      <Text style={styles.sectionLabel}>Date</Text>
+      <TouchableOpacity style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
+        <Text style={styles.dateButtonText}>
+          {gameDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+        </Text>
+        <Text style={styles.dateButtonIcon}>📅</Text>
+      </TouchableOpacity>
+      {showDatePicker && (
+        <View style={styles.datePickerContainer}>
+          <DateTimePicker
+            value={gameDate}
+            mode="date"
+            display="inline"
+            maximumDate={new Date()}
+            themeVariant="dark"
+            onChange={(_, selected) => {
+              if (selected) {
+                setGameDate(selected);
+                setShowDatePicker(false);
+              }
+            }}
+          />
+        </View>
+      )}
+
       {/* Notes */}
       <Text style={styles.sectionLabel}>Notes (optional)</Text>
       <TextInput
@@ -269,6 +300,27 @@ const styles = StyleSheet.create({
   resultLoss: { backgroundColor: '#2b0d0d', borderColor: '#f44336' },
   resultText: { color: '#888', fontWeight: '700', fontSize: 16 },
   resultTextActive: { color: '#fff' },
+  dateButton: {
+    backgroundColor: '#111d4a',
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#1e2d6b',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dateButtonText: { color: '#fff', fontSize: 16 },
+  dateButtonIcon: { fontSize: 18 },
+  datePickerContainer: {
+    marginHorizontal: 16,
+    backgroundColor: '#111d4a',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#1e2d6b',
+    overflow: 'hidden',
+  },
   submitButton: {
     backgroundColor: '#c9a844',
     borderRadius: 14,

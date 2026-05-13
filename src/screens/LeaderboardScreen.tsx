@@ -10,8 +10,8 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getAllTimeLeaderboard, getPeriodLeaderboard, getAchievements, Achievements } from '../lib/db';
-import { LeaderboardEntry } from '../types';
+import { getGroupLeaderboard, getGroupPeriodLeaderboard, getAchievements, Achievements } from '../lib/db';
+import { Group, LeaderboardEntry } from '../types';
 
 type Tab = 'weekly' | 'monthly' | 'alltime' | 'achievements';
 
@@ -38,9 +38,12 @@ const TAB_LABELS: Record<Tab, string> = {
 
 interface Props {
   onViewPlayer?: (uid: string) => void;
+  activeGroup: Group;
+  allGroups: Group[];
+  onSwitchGroup: () => void;
 }
 
-export default function LeaderboardScreen({ onViewPlayer }: Props) {
+export default function LeaderboardScreen({ onViewPlayer, activeGroup, allGroups, onSwitchGroup }: Props) {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>('alltime');
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
@@ -52,23 +55,23 @@ export default function LeaderboardScreen({ onViewPlayer }: Props) {
     setLoading(true);
     try {
       if (t === 'achievements') {
-        const ach = await getAchievements();
+        const ach = await getAchievements(activeGroup.members);
         setAchievements(ach);
       } else if (t === 'alltime') {
-        setEntries(await getAllTimeLeaderboard());
+        setEntries(await getGroupLeaderboard(activeGroup.members));
       } else if (t === 'weekly') {
-        setEntries(await getPeriodLeaderboard(startOfWeek()));
+        setEntries(await getGroupPeriodLeaderboard(activeGroup.members, startOfWeek()));
       } else {
-        setEntries(await getPeriodLeaderboard(startOfMonth()));
+        setEntries(await getGroupPeriodLeaderboard(activeGroup.members, startOfMonth()));
       }
     } catch (e) {
       console.error('Leaderboard load error:', e);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeGroup]);
 
-  useEffect(() => { load(tab); }, [tab, load]);
+  useEffect(() => { load(tab); }, [tab, load, activeGroup]);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -78,7 +81,17 @@ export default function LeaderboardScreen({ onViewPlayer }: Props) {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <Text style={styles.title}>Leaderboard</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>Leaderboard</Text>
+        {allGroups.length > 1 && (
+          <TouchableOpacity onPress={onSwitchGroup} style={styles.groupBadge}>
+            <Text style={styles.groupBadgeText}>{activeGroup.name} ▾</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+      {allGroups.length === 1 && (
+        <Text style={styles.groupSubtitle}>{activeGroup.name}</Text>
+      )}
 
       <View style={styles.tabs}>
         {(['weekly', 'monthly', 'alltime', 'achievements'] as Tab[]).map((t) => (
@@ -108,6 +121,7 @@ export default function LeaderboardScreen({ onViewPlayer }: Props) {
               <Text style={styles.achievementBadge}>🏅</Text>
               <View style={styles.achievementInfo}>
                 <Text style={styles.achievementLabel}>Mr. Rebuttal</Text>
+                <Text style={styles.achievementDesc}>Most rebuttal caps across all games</Text>
                 <Text style={styles.achievementUser}>@{achievements.mrRebuttal.username}</Text>
               </View>
               <Text style={styles.achievementStat}>{achievements.mrRebuttal.total}</Text>
@@ -115,9 +129,10 @@ export default function LeaderboardScreen({ onViewPlayer }: Props) {
           ) : null}
           {achievements?.bounceMerchant ? (
             <View style={styles.achievementCard}>
-              <Text style={styles.achievementBadge}>🎯</Text>
+              <Text style={styles.achievementBadge}>🏀</Text>
               <View style={styles.achievementInfo}>
                 <Text style={styles.achievementLabel}>Bounce Merchant</Text>
+                <Text style={styles.achievementDesc}>Most caps scored via bounce</Text>
                 <Text style={styles.achievementUser}>@{achievements.bounceMerchant.username}</Text>
               </View>
               <Text style={styles.achievementStat}>{achievements.bounceMerchant.total}</Text>
@@ -128,6 +143,7 @@ export default function LeaderboardScreen({ onViewPlayer }: Props) {
               <Text style={styles.achievementBadge}>🔥</Text>
               <View style={styles.achievementInfo}>
                 <Text style={styles.achievementLabel}>Hot Streak</Text>
+                <Text style={styles.achievementDesc}>Longest active win streak right now</Text>
                 <Text style={styles.achievementUser}>@{achievements.hotStreak.username}</Text>
               </View>
               <Text style={styles.achievementStat}>{achievements.hotStreak.total} W</Text>
@@ -138,6 +154,7 @@ export default function LeaderboardScreen({ onViewPlayer }: Props) {
               <Text style={styles.achievementBadge}>🎯</Text>
               <View style={styles.achievementInfo}>
                 <Text style={styles.achievementLabel}>Sharp Shooter</Text>
+                <Text style={styles.achievementDesc}>Best caps per game (min. 3 games)</Text>
                 <Text style={styles.achievementUser}>@{achievements.sharpShooter.username}</Text>
               </View>
               <Text style={styles.achievementStat}>{achievements.sharpShooter.total} CPG</Text>
@@ -148,9 +165,21 @@ export default function LeaderboardScreen({ onViewPlayer }: Props) {
               <Text style={styles.achievementBadge}>💪</Text>
               <View style={styles.achievementInfo}>
                 <Text style={styles.achievementLabel}>Ironman</Text>
+                <Text style={styles.achievementDesc}>Most total games played</Text>
                 <Text style={styles.achievementUser}>@{achievements.ironman.username}</Text>
               </View>
               <Text style={styles.achievementStat}>{achievements.ironman.total} G</Text>
+            </View>
+          ) : null}
+          {achievements?.burger ? (
+            <View style={styles.achievementCard}>
+              <Text style={styles.achievementBadge}>🍔</Text>
+              <View style={styles.achievementInfo}>
+                <Text style={styles.achievementLabel}>Burger</Text>
+                <Text style={styles.achievementDesc}>Most total losses</Text>
+                <Text style={styles.achievementUser}>@{achievements.burger.username}</Text>
+              </View>
+              <Text style={styles.achievementStat}>{achievements.burger.total} L</Text>
             </View>
           ) : null}
           {!achievements?.mrRebuttal && !achievements?.bounceMerchant && !achievements?.hotStreak && (
@@ -197,7 +226,11 @@ export default function LeaderboardScreen({ onViewPlayer }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0f2e' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 28, fontWeight: '800', color: '#fff', padding: 24, paddingBottom: 16 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 24, paddingBottom: 4 },
+  title: { fontSize: 28, fontWeight: '800', color: '#fff' },
+  groupSubtitle: { color: '#c9a844', fontSize: 13, fontWeight: '600', paddingHorizontal: 24, paddingBottom: 12 },
+  groupBadge: { backgroundColor: '#111d4a', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: '#c9a844' },
+  groupBadgeText: { color: '#c9a844', fontWeight: '600', fontSize: 13 },
   tabs: {
     flexDirection: 'row',
     marginHorizontal: 16,
@@ -245,6 +278,7 @@ const styles = StyleSheet.create({
   achievementBadge: { fontSize: 32, marginRight: 14 },
   achievementInfo: { flex: 1 },
   achievementLabel: { color: '#c9a844', fontWeight: '800', fontSize: 16 },
-  achievementUser: { color: '#888', fontSize: 13, marginTop: 2 },
+  achievementDesc: { color: '#aaa', fontSize: 12, marginTop: 2 },
+  achievementUser: { color: '#555', fontSize: 12, marginTop: 4 },
   achievementStat: { color: '#fff', fontWeight: '700', fontSize: 20 },
 });

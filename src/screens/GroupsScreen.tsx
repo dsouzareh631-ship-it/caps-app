@@ -1,0 +1,123 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Alert,
+  Clipboard,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Group } from '../types';
+
+interface Props {
+  groups: Group[];
+  activeGroupId: string;
+  onSwitchGroup: (index: number) => void;
+  onJoinOrCreate: () => void;
+}
+
+export default function GroupsScreen({ groups, activeGroupId, onSwitchGroup, onJoinOrCreate }: Props) {
+  const insets = useSafeAreaInsets();
+
+  function copyCode(code: string) {
+    Clipboard.setString(code);
+    Alert.alert('Copied!', `Invite code ${code} copied to clipboard.`);
+  }
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <Text style={styles.title}>Your Groups</Text>
+
+      <FlatList
+        data={groups}
+        keyExtractor={(g) => g.id}
+        contentContainerStyle={{ padding: 16 }}
+        renderItem={({ item, index }) => {
+          const isActive = item.id === activeGroupId;
+          return (
+            <View style={[styles.card, isActive && styles.cardActive]}>
+              <View style={styles.cardHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.groupName}>{item.name}</Text>
+                  <Text style={styles.memberCount}>{item.members.length} member{item.members.length !== 1 ? 's' : ''}</Text>
+                </View>
+                {isActive && <View style={styles.activeBadge}><Text style={styles.activeBadgeText}>Active</Text></View>}
+              </View>
+
+              <View style={styles.codeRow}>
+                <Text style={styles.codeLabel}>Invite Code</Text>
+                <TouchableOpacity style={styles.codeBox} onPress={() => copyCode(item.code)}>
+                  <Text style={styles.codeText}>{item.code}</Text>
+                  <Text style={styles.copyIcon}>📋</Text>
+                </TouchableOpacity>
+              </View>
+
+              {!isActive && (
+                <TouchableOpacity style={styles.switchBtn} onPress={() => onSwitchGroup(index)}>
+                  <Text style={styles.switchBtnText}>Switch to this group</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          );
+        }}
+        ListFooterComponent={
+          <TouchableOpacity style={styles.addBtn} onPress={onJoinOrCreate}>
+            <Text style={styles.addBtnText}>+ Join or Create Another Group</Text>
+          </TouchableOpacity>
+        }
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#0a0f2e' },
+  title: { fontSize: 28, fontWeight: '800', color: '#fff', padding: 24, paddingBottom: 8 },
+  card: {
+    backgroundColor: '#111d4a',
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#1e2d6b',
+  },
+  cardActive: { borderColor: '#c9a844' },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+  groupName: { color: '#fff', fontWeight: '700', fontSize: 18 },
+  memberCount: { color: '#888', fontSize: 13, marginTop: 2 },
+  activeBadge: { backgroundColor: '#c9a844', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  activeBadgeText: { color: '#000', fontWeight: '800', fontSize: 12 },
+  codeLabel: { color: '#888', fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  codeRow: { marginBottom: 12 },
+  codeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0a0f2e',
+    borderRadius: 10,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#1e2d6b',
+    justifyContent: 'space-between',
+  },
+  codeText: { color: '#c9a844', fontWeight: '900', fontSize: 22, letterSpacing: 4 },
+  copyIcon: { fontSize: 18 },
+  switchBtn: {
+    borderRadius: 10,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#c9a844',
+  },
+  switchBtnText: { color: '#c9a844', fontWeight: '600', fontSize: 14 },
+  addBtn: {
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#333',
+    marginTop: 4,
+  },
+  addBtnText: { color: '#888', fontWeight: '600', fontSize: 14 },
+});

@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
 import { getUser, getUserGames, getPendingVerifications } from '../lib/db';
-import { User, Game } from '../types';
+import { User, Game, Group } from '../types';
 import { FloatingBubbles } from '../components/FloatingCaps';
 import BeerMug from '../components/BeerMug';
 
@@ -20,6 +20,9 @@ interface Props {
   onLogGame: () => void;
   onViewVerifications: () => void;
   onViewGame?: (gameId: string) => void;
+  activeGroup: Group;
+  showGroupSwitcher: boolean;
+  onSwitchGroup: () => void;
 }
 
 function StatCard({ label, value }: { label: string; value: string }) {
@@ -79,7 +82,7 @@ function BouncyLogButton({ onPress }: { onPress: () => void }) {
   );
 }
 
-export default function HomeScreen({ onLogGame, onViewVerifications, onViewGame }: Props) {
+export default function HomeScreen({ onLogGame, onViewVerifications, onViewGame, activeGroup, showGroupSwitcher, onSwitchGroup }: Props) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [profile, setProfile] = useState<User | null>(null);
@@ -96,9 +99,12 @@ export default function HomeScreen({ onLogGame, onViewVerifications, onViewGame 
       getPendingVerifications(user.uid),
     ]);
     setProfile(p);
-    setRecentGames(games.slice(0, 5));
+    const groupGames = games.filter(g =>
+      g.players.some(uid => uid !== user.uid && activeGroup.members.includes(uid))
+    );
+    setRecentGames(groupGames.slice(0, 5));
     setPendingCount(pending.length);
-  }, [user]);
+  }, [user, activeGroup]);
 
   useEffect(() => {
     load().finally(() => setLoading(false));
@@ -134,7 +140,12 @@ export default function HomeScreen({ onLogGame, onViewVerifications, onViewGame 
         ListHeaderComponent={
           <>
             <View style={styles.greetingRow}>
-              <Text style={styles.greeting}>Hey, {profile?.username ?? user?.email?.split('@')[0]}</Text>
+              <View>
+                <Text style={styles.greeting}>Hey, {profile?.username ?? user?.email?.split('@')[0]}</Text>
+                <TouchableOpacity onPress={showGroupSwitcher ? onSwitchGroup : undefined} activeOpacity={showGroupSwitcher ? 0.7 : 1}>
+                  <Text style={styles.groupName}>{activeGroup.name}{showGroupSwitcher ? ' ▾' : ''}</Text>
+                </TouchableOpacity>
+              </View>
               <BeerMug size={64} />
             </View>
 
@@ -165,7 +176,7 @@ export default function HomeScreen({ onLogGame, onViewVerifications, onViewGame 
           </TouchableOpacity>
         )}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>No games yet. Log your first game above.</Text>
+          <Text style={styles.emptyText}>No games with {activeGroup.name} yet. Log your first game above.</Text>
         }
       />
     </View>
@@ -176,7 +187,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0f2e' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0f2e' },
   greetingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16 },
-  greeting: { fontSize: 26, fontWeight: '700', color: '#fff', flex: 1 },
+  greeting: { fontSize: 26, fontWeight: '700', color: '#fff' },
+  groupName: { fontSize: 13, color: '#c9a844', fontWeight: '600', marginTop: 2 },
   statsRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 10, marginBottom: 20 },
   statCard: {
     flex: 1,
