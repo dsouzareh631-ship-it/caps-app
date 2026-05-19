@@ -125,7 +125,13 @@ export default function HomeScreen({ onLogGame, onViewVerifications, onViewGame,
   }, [user, activeGroup]);
 
   useEffect(() => {
-    load().finally(() => setLoading(false));
+    setGroupTotalCaps(0);
+    setGroupCPG('0.0');
+    setGroupRecord({ wins: 0, losses: 0 });
+    setGroupStreak(0);
+    setRecentGames([]);
+    setRefreshing(true);
+    load().finally(() => { setLoading(false); setRefreshing(false); });
   }, [load]);
 
   async function onRefresh() {
