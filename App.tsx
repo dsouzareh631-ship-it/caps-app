@@ -1,12 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+
+import React, { useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, View, ActivityIndicator, StyleSheet, Modal, TouchableOpacity, FlatList } from 'react-native';
+import { Text, View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuth } from './src/hooks/useAuth';
-import { getUserGroups } from './src/lib/db';
-import { registerForPushNotifications } from './src/lib/notifications';
-import { Group, User } from './src/types';
 import LoginScreen from './src/screens/LoginScreen';
 import SignUpScreen from './src/screens/SignUpScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -15,8 +13,6 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import LogGameScreen from './src/screens/LogGameScreen';
 import VerificationsScreen from './src/screens/VerificationsScreen';
 import GameDetailScreen from './src/screens/GameDetailScreen';
-import GroupSetupScreen from './src/screens/GroupSetupScreen';
-import GroupsScreen from './src/screens/GroupsScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -27,7 +23,6 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   const icons: Record<string, string> = {
     Home: '🏠',
     Leaderboard: '🏆',
-    Groups: '👥',
     Profile: '👤',
   };
   return (
@@ -42,25 +37,11 @@ function MainTabs({
   onViewVerifications,
   onViewPlayer,
   onViewGame,
-  activeGroup,
-  allGroups,
-  activeGroupIndex,
-  onSwitchGroup,
-  onSwitchGroupIndex,
-  onJoinOrCreate,
-  onLeaveGroup,
 }: {
   onLogGame: () => void;
   onViewVerifications: () => void;
   onViewPlayer: (uid: string) => void;
   onViewGame: (gameId: string) => void;
-  activeGroup: Group;
-  allGroups: Group[];
-  activeGroupIndex: number;
-  onSwitchGroup: () => void;
-  onSwitchGroupIndex: (index: number) => void;
-  onJoinOrCreate: () => void;
-  onLeaveGroup: (groupId: string) => void;
 }) {
   return (
     <Tab.Navigator
@@ -81,39 +62,14 @@ function MainTabs({
     >
       <Tab.Screen name="Home">
         {() => (
-          <HomeScreen
-            onLogGame={onLogGame}
-            onViewVerifications={onViewVerifications}
-            onViewGame={onViewGame}
-            activeGroup={activeGroup}
-            showGroupSwitcher={allGroups.length > 1}
-            onSwitchGroup={onSwitchGroup}
-          />
+          <HomeScreen onLogGame={onLogGame} onViewVerifications={onViewVerifications} onViewGame={onViewGame} />
         )}
       </Tab.Screen>
       <Tab.Screen name="Leaderboard">
-        {() => (
-          <LeaderboardScreen
-            onViewPlayer={onViewPlayer}
-            activeGroup={activeGroup}
-            allGroups={allGroups}
-            onSwitchGroup={onSwitchGroup}
-          />
-        )}
-      </Tab.Screen>
-      <Tab.Screen name="Groups">
-        {() => (
-          <GroupsScreen
-            groups={allGroups}
-            activeGroupId={activeGroup.id}
-            onSwitchGroup={onSwitchGroupIndex}
-            onJoinOrCreate={onJoinOrCreate}
-            onLeaveGroup={onLeaveGroup}
-          />
-        )}
+        {() => <LeaderboardScreen onViewPlayer={onViewPlayer} />}
       </Tab.Screen>
       <Tab.Screen name="Profile">
-        {() => <ProfileScreen onViewGame={onViewGame} groups={allGroups} />}
+        {() => <ProfileScreen onViewGame={onViewGame} />}
       </Tab.Screen>
     </Tab.Navigator>
   );
@@ -132,33 +88,8 @@ export default function App() {
   const [modal, setModal] = useState<AppModal>(null);
   const [viewingPlayer, setViewingPlayer] = useState<string | null>(null);
   const [viewingGame, setViewingGame] = useState<string | null>(null);
-  const [groups, setGroups] = useState<Group[]>([]);
-  const prevGroupsRef = useRef<Group[]>([]);
-  const [activeGroupIndex, setActiveGroupIndex] = useState(0);
-  const [groupsLoading, setGroupsLoading] = useState(true);
-  const [showGroupSwitcher, setShowGroupSwitcher] = useState(false);
 
-  const loadGroups = useCallback(async () => {
-    if (!user) return;
-    setGroupsLoading(true);
-    try {
-      const g = await getUserGroups(user.uid);
-      setGroups(g);
-    } finally {
-      setGroupsLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
-      loadGroups();
-      registerForPushNotifications(user.uid);
-    } else {
-      setGroupsLoading(false);
-    }
-  }, [user, loadGroups]);
-
-  if (loading || groupsLoading) {
+  if (loading) {
     return (
       <SafeAreaProvider>
         <View style={styles.loading}>
@@ -178,128 +109,42 @@ export default function App() {
     );
   }
 
-  if (groups.length === 0) {
-    const hadGroups = prevGroupsRef.current.length > 0;
-    return (
-      <SafeAreaProvider>
-        <GroupSetupScreen
-          onDone={(group) => {
-            const next = [...prevGroupsRef.current, group];
-            setGroups(next);
-            setActiveGroupIndex(next.length - 1);
-            prevGroupsRef.current = [];
-          }}
-          onBack={hadGroups ? () => {
-            setGroups(prevGroupsRef.current);
-            prevGroupsRef.current = [];
-          } : undefined}
-        />
-      </SafeAreaProvider>
-    );
-  }
-
-  const activeGroup = groups[activeGroupIndex] ?? groups[0];
-
   if (modal === 'logGame') {
     return (
-      <SafeAreaProvider>
-        <LogGameScreen
-          onSuccess={() => setModal(null)}
-          onBack={() => setModal(null)}
-          activeGroup={activeGroup}
-        />
-      </SafeAreaProvider>
+      <LogGameScreen
+        onSuccess={() => setModal(null)}
+        onBack={() => setModal(null)}
+      />
     );
   }
 
   if (modal === 'verifications') {
-    return (
-      <SafeAreaProvider>
-        <VerificationsScreen onBack={() => setModal(null)} />
-      </SafeAreaProvider>
-    );
+    return <VerificationsScreen onBack={() => setModal(null)} />;
   }
 
   if (viewingGame) {
-    return (
-      <SafeAreaProvider>
-        <GameDetailScreen
-          gameId={viewingGame}
-          onBack={() => setViewingGame(null)}
-          onViewPlayer={(uid) => { setViewingGame(null); setViewingPlayer(uid); }}
-        />
-      </SafeAreaProvider>
-    );
+    return <GameDetailScreen gameId={viewingGame} onBack={() => setViewingGame(null)} />;
   }
 
   if (viewingPlayer) {
     return (
-      <SafeAreaProvider>
-        <ProfileScreen
-          uid={viewingPlayer}
-          onBack={() => setViewingPlayer(null)}
-          onViewGame={(gameId) => setViewingGame(gameId)}
-          groups={groups}
-        />
-      </SafeAreaProvider>
+      <ProfileScreen
+        uid={viewingPlayer}
+        onBack={() => setViewingPlayer(null)}
+        onViewGame={(gameId) => setViewingGame(gameId)}
+      />
     );
   }
 
   return (
-    <SafeAreaProvider>
-      <NavigationContainer>
-        <MainTabs
-          onLogGame={() => setModal('logGame')}
-          onViewVerifications={() => setModal('verifications')}
-          onViewPlayer={(uid) => setViewingPlayer(uid)}
-          onViewGame={(gameId) => setViewingGame(gameId)}
-          activeGroup={activeGroup}
-          allGroups={groups}
-          activeGroupIndex={activeGroupIndex}
-          onSwitchGroup={() => setShowGroupSwitcher(true)}
-          onSwitchGroupIndex={(index) => setActiveGroupIndex(index)}
-          onJoinOrCreate={() => { prevGroupsRef.current = groups; setGroups([]); }}
-          onLeaveGroup={(groupId: string) => {
-            const next = groups.filter((g) => g.id !== groupId);
-            setGroups(next);
-            setActiveGroupIndex((prev) => Math.min(prev, Math.max(0, next.length - 1)));
-          }}
-        />
-      </NavigationContainer>
-      <Modal visible={showGroupSwitcher} transparent animationType="fade" onRequestClose={() => setShowGroupSwitcher(false)}>
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowGroupSwitcher(false)}>
-          <View style={styles.switcherCard}>
-            <Text style={styles.switcherTitle}>Switch Group</Text>
-            <FlatList
-              data={groups}
-              keyExtractor={(g) => g.id}
-              renderItem={({ item, index }) => (
-                <TouchableOpacity
-                  style={[styles.switcherItem, index === activeGroupIndex && styles.switcherItemActive]}
-                  onPress={() => {
-                    setActiveGroupIndex(index);
-                    setShowGroupSwitcher(false);
-                  }}
-                >
-                  <Text style={styles.switcherItemName}>{item.name}</Text>
-                  <Text style={styles.switcherItemCode}>{item.code}</Text>
-                </TouchableOpacity>
-              )}
-            />
-            <TouchableOpacity
-              style={styles.switcherJoin}
-              onPress={() => {
-                setShowGroupSwitcher(false);
-                prevGroupsRef.current = groups;
-                setGroups([]);
-              }}
-            >
-              <Text style={styles.switcherJoinText}>+ Join Another Group</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-    </SafeAreaProvider>
+    <NavigationContainer>
+      <MainTabs
+        onLogGame={() => setModal('logGame')}
+        onViewVerifications={() => setModal('verifications')}
+        onViewPlayer={(uid) => setViewingPlayer(uid)}
+        onViewGame={(gameId) => setViewingGame(gameId)}
+      />
+    </NavigationContainer>
   );
 }
 
@@ -310,34 +155,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#0a0f2e',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  switcherCard: {
-    backgroundColor: '#111d4a',
-    borderRadius: 16,
-    padding: 20,
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#1e2d6b',
-  },
-  switcherTitle: { color: '#fff', fontWeight: '800', fontSize: 18, marginBottom: 16 },
-  switcherItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 14,
-    borderRadius: 10,
-    marginBottom: 8,
-    backgroundColor: '#0a0f2e',
-  },
-  switcherItemActive: { borderWidth: 1, borderColor: '#c9a844' },
-  switcherItemName: { color: '#fff', fontWeight: '600', fontSize: 15 },
-  switcherItemCode: { color: '#555', fontSize: 13 },
-  switcherJoin: { marginTop: 8, padding: 14, alignItems: 'center' },
-  switcherJoinText: { color: '#c9a844', fontWeight: '600', fontSize: 14 },
 });
