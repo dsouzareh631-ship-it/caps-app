@@ -152,7 +152,7 @@ export default function ProfileScreen({ uid: viewUid, onBack, onViewGame, groups
       aspect: [1, 1],
       quality: 0.7,
     });
-    if (result.canceled) return;
+    if (result.canceled || !result.assets?.length) return;
     setUploadingPhoto(true);
     try {
       const url = await uploadProfilePhoto(user.uid, result.assets[0].uri);

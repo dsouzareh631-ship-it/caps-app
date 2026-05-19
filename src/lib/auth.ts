@@ -62,7 +62,18 @@ export async function deleteAccount(userId: string): Promise<void> {
   // Delete Firestore user document
   await deleteDoc(doc(db, 'users', userId));
 
-  // Delete Firebase Auth account (must be last — loses auth context after this)
-  const user = auth.currentUser;
-  if (user) await deleteUser(user);
+  // Delete Firebase Auth account (must be last — loses auth context after this).
+  // auth.currentUser can be null if the session expired during the operation above;
+  // in that case the auth account still exists but the Firestore doc is gone, which
+  // is acceptable — Firebase Auth accounts with no Firestore doc are harmless.
+  const firebaseUser = auth.currentUser;
+  if (firebaseUser) {
+    try {
+      await deleteUser(firebaseUser);
+    } catch (e: any) {
+      // auth/user-not-found means it was already deleted — safe to ignore.
+      // auth/requires-recent-login is re-thrown so the caller can prompt re-auth.
+      if (e.code !== 'auth/user-not-found') throw e;
+    }
+  }
 }

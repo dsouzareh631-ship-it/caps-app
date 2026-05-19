@@ -282,29 +282,13 @@ export async function updateGame(
 export async function approveGame(gameId: string, approverId: string) {
   const gameRef = doc(db, 'games', gameId);
 
-  // Pre-transaction reads: check eligibility before paying transaction cost
+  // Pre-transaction eligibility check (cheap read before paying transaction cost)
   const snap = await getDoc(gameRef);
   if (!snap.exists()) return;
   const game = snap.data() as Game;
   if (game.status !== 'pending') return;
   if (approverId === game.userId) return;
   if (game.approvals.includes(approverId)) return;
-
-  // Compute correct win streak from all verified games sorted by date,
-  // including the game being approved now.
-  const verifiedSnap = await getDocs(
-    query(collection(db, 'games'), where('userId', '==', game.userId), where('status', '==', 'verified'))
-  );
-  const allVerified = [
-    ...verifiedSnap.docs.map((d) => d.data() as Game),
-    { ...game, status: 'verified' as const },
-  ].sort((a, b) => b.date - a.date);
-
-  let streak = 0;
-  for (const g of allVerified) {
-    if (g.result === 'win') streak++;
-    else break;
-  }
 
   const capsAdded = game.capsMade + game.bounces + (game.rebuttals ?? 0) + (game.floaters ?? 0) + (game.gameWinners ?? 0);
   const userRef = doc(db, 'users', game.userId);
@@ -323,20 +307,26 @@ export async function approveGame(gameId: string, approverId: string) {
 
     tx.update(gameRef, { status: 'verified', approvals: arrayUnion(approverId) });
 
+    // Streak is computed atomically inside the transaction from the stored value:
+    // win → increment, loss → reset to 0. This avoids a collection query (which
+    // can't run inside a Firestore transaction) and eliminates the race condition
+    // where two simultaneous approvals could both read stale streak data.
+    const newStreak = game.result === 'win' ? (u.currentWinStreak ?? 0) + 1 : 0;
+
     if (game.result === 'win') {
       tx.update(userRef, {
         totalCaps: (u.totalCaps ?? 0) + capsAdded,
         totalGames: (u.totalGames ?? 0) + 1,
         totalWins: (u.totalWins ?? 0) + 1,
-        currentWinStreak: streak,
-        bestWinStreak: Math.max(streak, u.bestWinStreak ?? 0),
+        currentWinStreak: newStreak,
+        bestWinStreak: Math.max(newStreak, u.bestWinStreak ?? 0),
       });
     } else {
       tx.update(userRef, {
         totalCaps: (u.totalCaps ?? 0) + capsAdded,
         totalGames: (u.totalGames ?? 0) + 1,
         totalLosses: (u.totalLosses ?? 0) + 1,
-        currentWinStreak: streak,
+        currentWinStreak: 0,
       });
     }
   });
@@ -549,6 +539,7 @@ export async function getAchievements(memberIds: string[]): Promise<Achievements
 
 export async function uploadProfilePhoto(uid: string, uri: string): Promise<string> {
   const response = await fetch(uri);
+  if (!response.ok) throw new Error(`Failed to read image (${response.status})`);
   const blob = await response.blob();
   const storageRef = ref(storage, `profile_photos/${uid}`);
   await uploadBytes(storageRef, blob);

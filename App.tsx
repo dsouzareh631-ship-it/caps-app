@@ -199,7 +199,8 @@ export default function App() {
     );
   }
 
-  const activeGroup = groups[activeGroupIndex] ?? groups[0];
+  const safeIndex = Math.min(activeGroupIndex, groups.length - 1);
+  const activeGroup = groups[safeIndex];
 
   if (editingGame) {
     return (
