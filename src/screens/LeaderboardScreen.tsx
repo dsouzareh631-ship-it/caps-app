@@ -10,8 +10,8 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getGroupLeaderboard, getGroupPeriodLeaderboard, getAchievements, Achievements } from '../lib/db';
-import { Group, LeaderboardEntry } from '../types';
+import { getAllTimeLeaderboard, getPeriodLeaderboard, getAchievements, getAllUsers, Achievements } from '../lib/db';
+import { LeaderboardEntry } from '../types';
 
 type Tab = 'weekly' | 'monthly' | 'alltime' | 'achievements';
 
@@ -38,12 +38,9 @@ const TAB_LABELS: Record<Tab, string> = {
 
 interface Props {
   onViewPlayer?: (uid: string) => void;
-  activeGroup: Group;
-  allGroups: Group[];
-  onSwitchGroup: () => void;
 }
 
-export default function LeaderboardScreen({ onViewPlayer, activeGroup, allGroups, onSwitchGroup }: Props) {
+export default function LeaderboardScreen({ onViewPlayer }: Props) {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>('alltime');
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
@@ -55,21 +52,22 @@ export default function LeaderboardScreen({ onViewPlayer, activeGroup, allGroups
     setLoading(true);
     try {
       if (t === 'achievements') {
-        const ach = await getAchievements(activeGroup.members);
+        const users = await getAllUsers();
+        const ach = await getAchievements(users.map(u => u.uid));
         setAchievements(ach);
       } else if (t === 'alltime') {
-        setEntries(await getGroupLeaderboard(activeGroup.members));
+        setEntries(await getAllTimeLeaderboard());
       } else if (t === 'weekly') {
-        setEntries(await getGroupPeriodLeaderboard(activeGroup.members, startOfWeek()));
+        setEntries(await getPeriodLeaderboard(startOfWeek()));
       } else {
-        setEntries(await getGroupPeriodLeaderboard(activeGroup.members, startOfMonth()));
+        setEntries(await getPeriodLeaderboard(startOfMonth()));
       }
     } catch (e) {
       console.error('Leaderboard load error:', e);
     } finally {
       setLoading(false);
     }
-  }, [activeGroup]);
+  }, []);
 
   useEffect(() => { load(tab); }, [tab, load]);
 
@@ -83,15 +81,7 @@ export default function LeaderboardScreen({ onViewPlayer, activeGroup, allGroups
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.titleRow}>
         <Text style={styles.title}>Leaderboard</Text>
-        {allGroups.length > 1 && (
-          <TouchableOpacity onPress={onSwitchGroup} style={styles.groupBadge}>
-            <Text style={styles.groupBadgeText}>{activeGroup.name} ▾</Text>
-          </TouchableOpacity>
-        )}
       </View>
-      {allGroups.length === 1 && (
-        <Text style={styles.groupSubtitle}>{activeGroup.name}</Text>
-      )}
 
       <View style={styles.tabs}>
         {(['weekly', 'monthly', 'alltime', 'achievements'] as Tab[]).map((t) => (

@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
 import { getUser, getUserGames, getPendingVerifications } from '../lib/db';
-import { User, Game, Group } from '../types';
+import { User, Game } from '../types';
 import { FloatingBubbles } from '../components/FloatingCaps';
 import BeerMug from '../components/BeerMug';
 
@@ -20,9 +20,6 @@ interface Props {
   onLogGame: () => void;
   onViewVerifications: () => void;
   onViewGame?: (gameId: string) => void;
-  activeGroup: Group;
-  showGroupSwitcher: boolean;
-  onSwitchGroup: () => void;
 }
 
 function StatCard({ label, value }: { label: string; value: string }) {
@@ -82,15 +79,11 @@ function BouncyLogButton({ onPress }: { onPress: () => void }) {
   );
 }
 
-export default function HomeScreen({ onLogGame, onViewVerifications, onViewGame, activeGroup, showGroupSwitcher, onSwitchGroup }: Props) {
+export default function HomeScreen({ onLogGame, onViewVerifications, onViewGame }: Props) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [profile, setProfile] = useState<User | null>(null);
   const [recentGames, setRecentGames] = useState<Game[]>([]);
-  const [groupTotalCaps, setGroupTotalCaps] = useState(0);
-  const [groupCPG, setGroupCPG] = useState('0.0');
-  const [groupRecord, setGroupRecord] = useState({ wins: 0, losses: 0 });
-  const [groupStreak, setGroupStreak] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -103,26 +96,9 @@ export default function HomeScreen({ onLogGame, onViewVerifications, onViewGame,
       getPendingVerifications(user.uid),
     ]);
     setProfile(p);
-    const groupGames = games.filter(g =>
-      g.players.some(uid => uid !== user.uid && activeGroup.members.includes(uid))
-    );
-    const verifiedGroupGames = groupGames.filter(g => g.status === 'verified');
-    const caps = verifiedGroupGames.reduce((sum, g) => sum + (g.capsMade ?? 0) + (g.bounces ?? 0) + (g.rebuttals ?? 0) + (g.floaters ?? 0) + (g.gameWinners ?? 0), 0);
-    const wins = verifiedGroupGames.filter(g => g.result === 'win').length;
-    const losses = verifiedGroupGames.filter(g => g.result === 'loss').length;
-    const sorted = [...verifiedGroupGames].sort((a, b) => b.date - a.date);
-    let streak = 0;
-    for (const g of sorted) {
-      if (g.result === 'win') streak++;
-      else break;
-    }
-    setGroupTotalCaps(caps);
-    setGroupCPG(verifiedGroupGames.length > 0 ? (caps / verifiedGroupGames.length).toFixed(1) : '0.0');
-    setGroupRecord({ wins, losses });
-    setGroupStreak(streak);
-    setRecentGames(groupGames.slice(0, 5));
+    setRecentGames(games.slice(0, 5));
     setPendingCount(pending.length);
-  }, [user, activeGroup]);
+  }, [user]);
 
   useEffect(() => {
     load().finally(() => setLoading(false));
@@ -154,20 +130,15 @@ export default function HomeScreen({ onLogGame, onViewVerifications, onViewGame,
         ListHeaderComponent={
           <>
             <View style={styles.greetingRow}>
-              <View>
-                <Text style={styles.greeting}>Hey, {profile?.username ?? user?.email?.split('@')[0]}</Text>
-                <TouchableOpacity onPress={showGroupSwitcher ? onSwitchGroup : undefined} activeOpacity={showGroupSwitcher ? 0.7 : 1}>
-                  <Text style={styles.groupName}>{activeGroup.name}{showGroupSwitcher ? ' ▾' : ''}</Text>
-                </TouchableOpacity>
-              </View>
+              <Text style={styles.greeting}>Hey, {profile?.username ?? user?.email?.split('@')[0]}</Text>
               <BeerMug size={64} />
             </View>
 
             <View style={styles.statsRow}>
-              <StatCard label="Total Caps" value={String(groupTotalCaps)} />
-              <StatCard label="CPG" value={groupCPG} />
-              <StatCard label="Record" value={`${groupRecord.wins}W-${groupRecord.losses}L`} />
-              <StatCard label="Streak 🔥" value={String(groupStreak)} />
+              <StatCard label="Total Caps" value={String(profile?.totalCaps ?? 0)} />
+              <StatCard label="CPG" value={profile && profile.totalGames > 0 ? (profile.totalCaps / profile.totalGames).toFixed(1) : '0.0'} />
+              <StatCard label="Record" value={`${profile?.totalWins ?? 0}W-${profile?.totalLosses ?? 0}L`} />
+              <StatCard label="Streak 🔥" value={String(profile?.currentWinStreak ?? 0)} />
             </View>
 
             {pendingCount > 0 && (
@@ -190,7 +161,7 @@ export default function HomeScreen({ onLogGame, onViewVerifications, onViewGame,
           </TouchableOpacity>
         )}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>No games with {activeGroup.name} yet. Log your first game above.</Text>
+          <Text style={styles.emptyText}>No games yet. Log your first game above.</Text>
         }
       />
     </View>
