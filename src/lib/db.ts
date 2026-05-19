@@ -253,6 +253,29 @@ export async function logGame(
   return ref.id;
 }
 
+export async function deleteGame(gameId: string): Promise<void> {
+  await deleteDoc(doc(db, 'games', gameId));
+}
+
+export async function updateGame(
+  gameId: string,
+  userId: string,
+  players: string[],
+  capsMade: number,
+  bounces: number,
+  rebuttals: number,
+  floaters: number,
+  gameWinners: number,
+  result: 'win' | 'loss',
+  notes: string,
+  date: number
+): Promise<void> {
+  await updateDoc(doc(db, 'games', gameId), {
+    userId, players, capsMade, bounces, rebuttals, floaters, gameWinners,
+    result, notes, date, approvals: [], rejections: [],
+  });
+}
+
 export async function approveGame(gameId: string, approverId: string) {
   const gameRef = doc(db, 'games', gameId);
 

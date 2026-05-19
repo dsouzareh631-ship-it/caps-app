@@ -13,7 +13,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
-import { getGroupMembers, getRecentTeammates, logGame } from '../lib/db';
+import { getGroupMembers, getRecentTeammates, logGame, updateGame, getGameById } from '../lib/db';
 import { notifyTaggedPlayers } from '../lib/notifications';
 import { Group, User } from '../types';
 
@@ -21,9 +21,10 @@ interface Props {
   onSuccess: () => void;
   onBack: () => void;
   activeGroup: Group;
+  editGameId?: string;
 }
 
-export default function LogGameScreen({ onSuccess, onBack, activeGroup }: Props) {
+export default function LogGameScreen({ onSuccess, onBack, activeGroup, editGameId }: Props) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [recentUsers, setRecentUsers] = useState<User[]>([]);
@@ -57,6 +58,22 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup }: Props)
       setUsersLoading(false);
     });
   }, [user, activeGroup]);
+
+  useEffect(() => {
+    if (!editGameId || !user) return;
+    getGameById(editGameId).then((g) => {
+      if (!g) return;
+      setSelectedPlayers(g.players.filter((uid) => uid !== user.uid));
+      setCapsMade(String(g.capsMade));
+      setBounces(String(g.bounces));
+      setRebuttals(String(g.rebuttals ?? 0));
+      setFloaters(String(g.floaters ?? 0));
+      setGameWinners(String(g.gameWinners ?? 0));
+      setResult(g.result);
+      setGameDate(new Date(g.date));
+      setNotes(g.notes ?? '');
+    });
+  }, [editGameId, user]);
 
   function togglePlayer(uid: string) {
     setSelectedPlayers((prev) =>
@@ -97,23 +114,18 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup }: Props)
     setLoading(true);
     try {
       const allPlayers = [user.uid, ...selectedPlayers];
-      await logGame(
-        user.uid,
-        allPlayers,
-        capsVal,
-        bouncesVal,
-        rebuttalsVal,
-        floatersVal,
-        gameWinnersVal,
-        result,
-        notes.trim(),
-        gameDate.getTime()
-      );
-      const names = selectedPlayers
-        .map((uid) => allUsers.find((u) => u.uid === uid)?.displayName ?? 'them')
-        .join(', ');
-      Alert.alert('Game Logged!', `Verification requests have been sent to ${names}.`);
-      notifyTaggedPlayers(selectedPlayers, user.uid);
+      if (editGameId) {
+        await updateGame(editGameId, user.uid, allPlayers, capsVal, bouncesVal, rebuttalsVal, floatersVal, gameWinnersVal, result, notes.trim(), gameDate.getTime());
+        Alert.alert('Game Updated!', 'Your game has been updated and sent for re-verification.');
+        notifyTaggedPlayers(selectedPlayers, user.uid);
+      } else {
+        await logGame(user.uid, allPlayers, capsVal, bouncesVal, rebuttalsVal, floatersVal, gameWinnersVal, result, notes.trim(), gameDate.getTime());
+        const names = selectedPlayers
+          .map((uid) => allUsers.find((u) => u.uid === uid)?.displayName ?? 'them')
+          .join(', ');
+        Alert.alert('Game Logged!', `Verification requests have been sent to ${names}.`);
+        notifyTaggedPlayers(selectedPlayers, user.uid);
+      }
       onSuccess();
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -136,7 +148,7 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup }: Props)
         <TouchableOpacity onPress={onBack}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Log a Game</Text>
+        <Text style={styles.title}>{editGameId ? 'Edit Game' : 'Log a Game'}</Text>
       </View>
 
       {/* Player Selection */}
@@ -286,7 +298,7 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup }: Props)
         {loading ? (
           <ActivityIndicator color="#000" />
         ) : (
-          <Text style={styles.submitText}>Submit for Verification</Text>
+          <Text style={styles.submitText}>{editGameId ? 'Update Game' : 'Submit for Verification'}</Text>
         )}
       </TouchableOpacity>
 

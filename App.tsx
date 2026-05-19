@@ -132,6 +132,7 @@ export default function App() {
   const [modal, setModal] = useState<AppModal>(null);
   const [viewingPlayer, setViewingPlayer] = useState<string | null>(null);
   const [viewingGame, setViewingGame] = useState<string | null>(null);
+  const [editingGame, setEditingGame] = useState<string | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
   const prevGroupsRef = useRef<Group[]>([]);
   const [activeGroupIndex, setActiveGroupIndex] = useState(0);
@@ -200,6 +201,19 @@ export default function App() {
 
   const activeGroup = groups[activeGroupIndex] ?? groups[0];
 
+  if (editingGame) {
+    return (
+      <SafeAreaProvider>
+        <LogGameScreen
+          onSuccess={() => setEditingGame(null)}
+          onBack={() => setEditingGame(null)}
+          activeGroup={activeGroup}
+          editGameId={editingGame}
+        />
+      </SafeAreaProvider>
+    );
+  }
+
   if (modal === 'logGame') {
     return (
       <SafeAreaProvider>
@@ -227,6 +241,7 @@ export default function App() {
           gameId={viewingGame}
           onBack={() => setViewingGame(null)}
           onViewPlayer={(uid) => { setViewingGame(null); setViewingPlayer(uid); }}
+          onEdit={(gameId) => { setViewingGame(null); setEditingGame(gameId); }}
         />
       </SafeAreaProvider>
     );

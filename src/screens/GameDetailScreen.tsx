@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getGameById, getUser } from '../lib/db';
+import { getGameById, getUser, deleteGame } from '../lib/db';
+import { useAuth } from '../hooks/useAuth';
 import { Game, User } from '../types';
 
 interface Props {
   gameId: string;
   onBack: () => void;
   onViewPlayer?: (uid: string) => void;
+  onEdit?: (gameId: string) => void;
 }
 
-export default function GameDetailScreen({ gameId, onBack, onViewPlayer }: Props) {
+export default function GameDetailScreen({ gameId, onBack, onViewPlayer, onEdit }: Props) {
+  const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const [game, setGame] = useState<Game | null>(null);
   const [players, setPlayers] = useState<User[]>([]);
@@ -66,6 +69,24 @@ export default function GameDetailScreen({ gameId, onBack, onViewPlayer }: Props
         <Text style={[styles.statusBadge, game.status === 'verified' ? styles.verified : game.status === 'pending' ? styles.pending : styles.rejected]}>
           {game.status.toUpperCase()}
         </Text>
+        {user?.uid === game.userId && game.status === 'pending' && (
+          <View style={styles.actionRow}>
+            <TouchableOpacity style={styles.editButton} onPress={() => onEdit?.(gameId)}>
+              <Text style={styles.editButtonText}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => {
+                Alert.alert('Delete Game', 'Are you sure you want to delete this game? This cannot be undone.', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Delete', style: 'destructive', onPress: async () => { await deleteGame(gameId); onBack(); } },
+                ]);
+              }}
+            >
+              <Text style={styles.deleteButtonText}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       <Text style={styles.sectionLabel}>Stats</Text>
@@ -208,4 +229,9 @@ const styles = StyleSheet.create({
     padding: 16, borderWidth: 1, borderColor: '#1e2d6b', marginBottom: 8,
   },
   notesText: { color: '#aaa', fontSize: 15, fontStyle: 'italic' },
+  actionRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
+  editButton: { flex: 1, backgroundColor: '#1e2d6b', borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  editButtonText: { color: '#c9a844', fontWeight: '700', fontSize: 14 },
+  deleteButton: { flex: 1, backgroundColor: '#2b0d0d', borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  deleteButtonText: { color: '#f44336', fontWeight: '700', fontSize: 14 },
 });
