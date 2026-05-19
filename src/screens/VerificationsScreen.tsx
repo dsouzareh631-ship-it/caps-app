@@ -8,12 +8,12 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
-  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
 import { getPendingVerifications, approveGame, rejectGame, getUser } from '../lib/db';
 import { notifyGameVerified, notifyGameRejected } from '../lib/notifications';
+import Avatar from '../components/Avatar';
 import { Game, User } from '../types';
 
 interface Props {
@@ -122,12 +122,8 @@ export default function VerificationsScreen({ onBack }: Props) {
           return (
             <View style={styles.card}>
               <View style={styles.ownerRow}>
-                <View style={styles.ownerAvatar}>
-                  {owner?.photoURL
-                    ? <Image source={{ uri: owner.photoURL }} style={styles.ownerAvatarImage} />
-                    : <Text style={styles.ownerAvatarText}>{(owner?.displayName ?? '?').charAt(0).toUpperCase()}</Text>}
-                </View>
-                <View>
+                <Avatar photoURL={owner?.photoURL} displayName={owner?.displayName ?? '?'} size={40} />
+                <View style={{ marginLeft: 12 }}>
                   <Text style={styles.ownerName}>{owner?.displayName ?? 'Unknown'}</Text>
                   <Text style={styles.ownerUsername}>@{owner?.username ?? '?'}</Text>
                 </View>
@@ -190,9 +186,6 @@ const styles = StyleSheet.create({
     borderColor: '#1e2d6b',
   },
   ownerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  ownerAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#c9a844', justifyContent: 'center', alignItems: 'center', marginRight: 12, overflow: 'hidden' },
-  ownerAvatarImage: { width: 40, height: 40, borderRadius: 20 },
-  ownerAvatarText: { color: '#000', fontWeight: '800', fontSize: 17 },
   ownerName: { color: '#fff', fontWeight: '700', fontSize: 17 },
   ownerUsername: { color: '#888', fontSize: 13 },
   statRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },

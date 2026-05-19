@@ -9,9 +9,9 @@ import {
   ActivityIndicator,
   RefreshControl,
   TextInput,
-  Image,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import Avatar from '../components/Avatar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
 import { getUser, getUserGames, updateUserProfile, getHeadToHead, isUsernameTaken, uploadProfilePhoto, updateUserPhotoURL } from '../lib/db';
@@ -198,23 +198,13 @@ export default function ProfileScreen({ uid: viewUid, onBack, onViewGame, groups
           )}
           <View style={styles.profileHeader}>
             {isOwnProfile ? (
-              <TouchableOpacity onPress={handlePickPhoto} disabled={uploadingPhoto} style={styles.avatar}>
-                {uploadingPhoto ? (
-                  <ActivityIndicator color="#000" size="small" />
-                ) : profile?.photoURL ? (
-                  <Image source={{ uri: profile.photoURL }} style={styles.avatarImage} />
-                ) : (
-                  <Text style={styles.avatarText}>{profile?.displayName.charAt(0).toUpperCase()}</Text>
-                )}
+              <TouchableOpacity onPress={handlePickPhoto} disabled={uploadingPhoto} style={styles.avatarWrapper}>
+                {uploadingPhoto
+                  ? <View style={styles.avatarWrapper}><ActivityIndicator color="#c9a844" size="small" /></View>
+                  : <Avatar photoURL={profile?.photoURL} displayName={profile?.displayName ?? ''} size={64} />}
               </TouchableOpacity>
             ) : (
-              <View style={styles.avatar}>
-                {profile?.photoURL ? (
-                  <Image source={{ uri: profile.photoURL }} style={styles.avatarImage} />
-                ) : (
-                  <Text style={styles.avatarText}>{profile?.displayName.charAt(0).toUpperCase()}</Text>
-                )}
-              </View>
+              <Avatar photoURL={profile?.photoURL} displayName={profile?.displayName ?? ''} size={64} />
             )}
             <View style={{ flex: 1 }}>
               <Text style={styles.displayName}>{profile?.displayName}</Text>
@@ -345,13 +335,7 @@ const styles = StyleSheet.create({
   backButtonText: { color: '#c9a844', fontSize: 16 },
   h2hBadge: { color: '#c9a844', fontSize: 12, fontWeight: '700', marginTop: 4 },
   profileHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 16, gap: 16 },
-  avatar: {
-    width: 64, height: 64, borderRadius: 32,
-    backgroundColor: '#c9a844', justifyContent: 'center', alignItems: 'center',
-    overflow: 'hidden',
-  },
-  avatarImage: { width: 64, height: 64, borderRadius: 32 },
-  avatarText: { color: '#000', fontWeight: '800', fontSize: 28 },
+  avatarWrapper: { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center' },
   displayName: { color: '#fff', fontWeight: '700', fontSize: 22 },
   username: { color: '#888', fontSize: 14 },
   editButton: {

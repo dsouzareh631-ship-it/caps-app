@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import Avatar from '../components/Avatar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getGameById, getUser, deleteGame } from '../lib/db';
 import { useAuth } from '../hooks/useAuth';
@@ -129,11 +130,7 @@ export default function GameDetailScreen({ gameId, onBack, onViewPlayer, onEdit 
         <>
           <Text style={styles.sectionLabel}>Logged By</Text>
           <View style={styles.playerRow}>
-            <View style={styles.playerAvatar}>
-              {logger.photoURL
-                ? <Image source={{ uri: logger.photoURL }} style={styles.playerAvatarImage} />
-                : <Text style={styles.playerAvatarText}>{logger.displayName.charAt(0).toUpperCase()}</Text>}
-            </View>
+            <Avatar photoURL={logger.photoURL} displayName={logger.displayName} size={40} />
             <View style={styles.playerInfo}>
               <Text style={styles.playerName}>{logger.displayName}</Text>
               <Text style={styles.playerUsername}>@{logger.username}</Text>
@@ -155,11 +152,7 @@ export default function GameDetailScreen({ gameId, onBack, onViewPlayer, onEdit 
                 onPress={() => onViewPlayer?.(p.uid)}
                 activeOpacity={onViewPlayer ? 0.7 : 1}
               >
-                <View style={styles.playerAvatar}>
-                  {p.photoURL
-                    ? <Image source={{ uri: p.photoURL }} style={styles.playerAvatarImage} />
-                    : <Text style={styles.playerAvatarText}>{p.displayName.charAt(0).toUpperCase()}</Text>}
-                </View>
+                <Avatar photoURL={p.photoURL} displayName={p.displayName} size={40} />
                 <View style={styles.playerInfo}>
                   <Text style={styles.playerName}>{p.displayName}</Text>
                   <Text style={styles.playerUsername}>@{p.username}</Text>
@@ -217,15 +210,8 @@ const styles = StyleSheet.create({
   playerRow: {
     backgroundColor: '#111d4a', marginHorizontal: 16, marginBottom: 8,
     borderRadius: 12, padding: 14, flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1, borderColor: '#1e2d6b',
+    gap: 12, borderWidth: 1, borderColor: '#1e2d6b',
   },
-  playerAvatar: {
-    width: 40, height: 40, borderRadius: 20, backgroundColor: '#c9a844',
-    justifyContent: 'center', alignItems: 'center', marginRight: 12,
-    overflow: 'hidden',
-  },
-  playerAvatarImage: { width: 40, height: 40, borderRadius: 20 },
-  playerAvatarText: { color: '#000', fontWeight: '800', fontSize: 16 },
   playerInfo: { flex: 1 },
   playerName: { color: '#fff', fontWeight: '600', fontSize: 15 },
   playerUsername: { color: '#555', fontSize: 12 },

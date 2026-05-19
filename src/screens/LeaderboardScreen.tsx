@@ -8,8 +8,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  Image,
 } from 'react-native';
+import Avatar from '../components/Avatar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getGroupLeaderboard, getGroupPeriodLeaderboard, getAchievements, Achievements } from '../lib/db';
 import { Group, LeaderboardEntry } from '../types';
@@ -120,11 +120,7 @@ export default function LeaderboardScreen({ onViewPlayer, activeGroup, allGroups
           {achievements?.mrRebuttal ? (
             <View style={styles.achievementCard}>
               <Text style={styles.achievementBadge}>🏅</Text>
-              <View style={styles.avatar}>
-                {achievements.mrRebuttal.photoURL
-                  ? <Image source={{ uri: achievements.mrRebuttal.photoURL }} style={styles.avatarImage} />
-                  : <Text style={styles.avatarText}>{achievements.mrRebuttal.displayName.charAt(0).toUpperCase()}</Text>}
-              </View>
+              <Avatar photoURL={achievements.mrRebuttal.photoURL} displayName={achievements.mrRebuttal.displayName} size={36} />
               <View style={styles.achievementInfo}>
                 <Text style={styles.achievementLabel}>Mr. Rebuttal</Text>
                 <Text style={styles.achievementDesc}>Most rebuttal caps across all games</Text>
@@ -136,11 +132,7 @@ export default function LeaderboardScreen({ onViewPlayer, activeGroup, allGroups
           {achievements?.bounceMerchant ? (
             <View style={styles.achievementCard}>
               <Text style={styles.achievementBadge}>🏀</Text>
-              <View style={styles.avatar}>
-                {achievements.bounceMerchant.photoURL
-                  ? <Image source={{ uri: achievements.bounceMerchant.photoURL }} style={styles.avatarImage} />
-                  : <Text style={styles.avatarText}>{achievements.bounceMerchant.displayName.charAt(0).toUpperCase()}</Text>}
-              </View>
+              <Avatar photoURL={achievements.bounceMerchant.photoURL} displayName={achievements.bounceMerchant.displayName} size={36} />
               <View style={styles.achievementInfo}>
                 <Text style={styles.achievementLabel}>Bounce Merchant</Text>
                 <Text style={styles.achievementDesc}>Most caps scored via bounce</Text>
@@ -152,11 +144,7 @@ export default function LeaderboardScreen({ onViewPlayer, activeGroup, allGroups
           {achievements?.hotStreak ? (
             <View style={styles.achievementCard}>
               <Text style={styles.achievementBadge}>🔥</Text>
-              <View style={styles.avatar}>
-                {achievements.hotStreak.photoURL
-                  ? <Image source={{ uri: achievements.hotStreak.photoURL }} style={styles.avatarImage} />
-                  : <Text style={styles.avatarText}>{achievements.hotStreak.displayName.charAt(0).toUpperCase()}</Text>}
-              </View>
+              <Avatar photoURL={achievements.hotStreak.photoURL} displayName={achievements.hotStreak.displayName} size={36} />
               <View style={styles.achievementInfo}>
                 <Text style={styles.achievementLabel}>Hot Streak</Text>
                 <Text style={styles.achievementDesc}>Longest active win streak right now</Text>
@@ -168,11 +156,7 @@ export default function LeaderboardScreen({ onViewPlayer, activeGroup, allGroups
           {achievements?.sharpShooter ? (
             <View style={styles.achievementCard}>
               <Text style={styles.achievementBadge}>🎯</Text>
-              <View style={styles.avatar}>
-                {achievements.sharpShooter.photoURL
-                  ? <Image source={{ uri: achievements.sharpShooter.photoURL }} style={styles.avatarImage} />
-                  : <Text style={styles.avatarText}>{achievements.sharpShooter.displayName.charAt(0).toUpperCase()}</Text>}
-              </View>
+              <Avatar photoURL={achievements.sharpShooter.photoURL} displayName={achievements.sharpShooter.displayName} size={36} />
               <View style={styles.achievementInfo}>
                 <Text style={styles.achievementLabel}>Sharp Shooter</Text>
                 <Text style={styles.achievementDesc}>Best caps per game (min. 3 games)</Text>
@@ -184,11 +168,7 @@ export default function LeaderboardScreen({ onViewPlayer, activeGroup, allGroups
           {achievements?.ironman ? (
             <View style={styles.achievementCard}>
               <Text style={styles.achievementBadge}>💪</Text>
-              <View style={styles.avatar}>
-                {achievements.ironman.photoURL
-                  ? <Image source={{ uri: achievements.ironman.photoURL }} style={styles.avatarImage} />
-                  : <Text style={styles.avatarText}>{achievements.ironman.displayName.charAt(0).toUpperCase()}</Text>}
-              </View>
+              <Avatar photoURL={achievements.ironman.photoURL} displayName={achievements.ironman.displayName} size={36} />
               <View style={styles.achievementInfo}>
                 <Text style={styles.achievementLabel}>Ironman</Text>
                 <Text style={styles.achievementDesc}>Most total games played</Text>
@@ -200,11 +180,7 @@ export default function LeaderboardScreen({ onViewPlayer, activeGroup, allGroups
           {achievements?.burger ? (
             <View style={styles.achievementCard}>
               <Text style={styles.achievementBadge}>🍔</Text>
-              <View style={styles.avatar}>
-                {achievements.burger.photoURL
-                  ? <Image source={{ uri: achievements.burger.photoURL }} style={styles.avatarImage} />
-                  : <Text style={styles.avatarText}>{achievements.burger.displayName.charAt(0).toUpperCase()}</Text>}
-              </View>
+              <Avatar photoURL={achievements.burger.photoURL} displayName={achievements.burger.displayName} size={36} />
               <View style={styles.achievementInfo}>
                 <Text style={styles.achievementLabel}>Burger</Text>
                 <Text style={styles.achievementDesc}>Most total losses</Text>
@@ -216,11 +192,7 @@ export default function LeaderboardScreen({ onViewPlayer, activeGroup, allGroups
           {achievements?.floatMaster ? (
             <View style={styles.achievementCard}>
               <Text style={styles.achievementBadge}>🫧</Text>
-              <View style={styles.avatar}>
-                {achievements.floatMaster.photoURL
-                  ? <Image source={{ uri: achievements.floatMaster.photoURL }} style={styles.avatarImage} />
-                  : <Text style={styles.avatarText}>{achievements.floatMaster.displayName.charAt(0).toUpperCase()}</Text>}
-              </View>
+              <Avatar photoURL={achievements.floatMaster.photoURL} displayName={achievements.floatMaster.displayName} size={36} />
               <View style={styles.achievementInfo}>
                 <Text style={styles.achievementLabel}>Cloud Nine</Text>
                 <Text style={styles.achievementDesc}>Most caps scored via floater</Text>
@@ -232,11 +204,7 @@ export default function LeaderboardScreen({ onViewPlayer, activeGroup, allGroups
           {achievements?.closer ? (
             <View style={styles.achievementCard}>
               <Text style={styles.achievementBadge}>🏁</Text>
-              <View style={styles.avatar}>
-                {achievements.closer.photoURL
-                  ? <Image source={{ uri: achievements.closer.photoURL }} style={styles.avatarImage} />
-                  : <Text style={styles.avatarText}>{achievements.closer.displayName.charAt(0).toUpperCase()}</Text>}
-              </View>
+              <Avatar photoURL={achievements.closer.photoURL} displayName={achievements.closer.displayName} size={36} />
               <View style={styles.achievementInfo}>
                 <Text style={styles.achievementLabel}>LeBron</Text>
                 <Text style={styles.achievementDesc}>Most game winners scored</Text>
@@ -254,17 +222,16 @@ export default function LeaderboardScreen({ onViewPlayer, activeGroup, allGroups
           data={entries}
           keyExtractor={(item) => item.uid}
           contentContainerStyle={{ padding: 16 }}
+          maxToRenderPerBatch={20}
+          updateCellsBatchingPeriod={50}
+          initialNumToRender={15}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#c9a844" />}
           renderItem={({ item, index }) => (
             <TouchableOpacity style={[styles.row, index === 0 && styles.rowFirst]} onPress={() => onViewPlayer?.(item.uid)} activeOpacity={0.75}>
               <Text style={[styles.rank, index === 0 && styles.rankFirst]}>
                 {index === 0 ? '🏆' : `#${index + 1}`}
               </Text>
-              <View style={styles.avatar}>
-                {item.photoURL
-                  ? <Image source={{ uri: item.photoURL }} style={styles.avatarImage} />
-                  : <Text style={styles.avatarText}>{item.displayName.charAt(0).toUpperCase()}</Text>}
-              </View>
+              <Avatar photoURL={item.photoURL} displayName={item.displayName} size={36} />
               <View style={styles.playerInfo}>
                 <Text style={styles.name}>{item.displayName}</Text>
                 <Text style={styles.username}>@{item.username}</Text>
@@ -324,9 +291,6 @@ const styles = StyleSheet.create({
   rowFirst: { borderColor: '#c9a844', backgroundColor: '#0d1535' },
   rank: { color: '#888', fontWeight: '700', fontSize: 14, width: 32 },
   rankFirst: { fontSize: 20 },
-  avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#c9a844', justifyContent: 'center', alignItems: 'center', marginRight: 10, overflow: 'hidden' },
-  avatarImage: { width: 36, height: 36, borderRadius: 18 },
-  avatarText: { color: '#000', fontWeight: '800', fontSize: 15 },
   playerInfo: { flex: 1, marginLeft: 4 },
   name: { color: '#fff', fontWeight: '700', fontSize: 14 },
   username: { color: '#555', fontSize: 12 },
