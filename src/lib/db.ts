@@ -15,7 +15,8 @@ import {
   Timestamp,
   runTransaction,
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from './firebase';
 import { Game, Group, LeaderboardEntry, User } from '../types';
 
 function randomCode(length = 6): string {
@@ -534,4 +535,16 @@ export async function getAchievements(memberIds: string[]): Promise<Achievements
   ]);
 
   return { mrRebuttal, bounceMerchant, hotStreak, sharpShooter, ironman, burger, floatMaster, closer };
+}
+
+export async function uploadProfilePhoto(uid: string, uri: string): Promise<string> {
+  const response = await fetch(uri);
+  const blob = await response.blob();
+  const storageRef = ref(storage, `profile_photos/${uid}`);
+  await uploadBytes(storageRef, blob);
+  return getDownloadURL(storageRef);
+}
+
+export async function updateUserPhotoURL(uid: string, photoURL: string): Promise<void> {
+  await updateDoc(doc(db, 'users', uid), { photoURL });
 }

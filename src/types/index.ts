@@ -12,6 +12,7 @@ export interface User {
   bestWinStreak: number;
   groupIds: string[];
   expoPushToken?: string;
+  photoURL?: string;
 }
 
 export interface Group {

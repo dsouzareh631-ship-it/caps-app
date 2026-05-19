@@ -9,10 +9,12 @@ import {
   ActivityIndicator,
   RefreshControl,
   TextInput,
+  Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
-import { getUser, getUserGames, updateUserProfile, getHeadToHead, isUsernameTaken } from '../lib/db';
+import { getUser, getUserGames, updateUserProfile, getHeadToHead, isUsernameTaken, uploadProfilePhoto, updateUserPhotoURL } from '../lib/db';
 import { logOut, deleteAccount } from '../lib/auth';
 import { User, Game, Group } from '../types';
 
@@ -37,6 +39,7 @@ export default function ProfileScreen({ uid: viewUid, onBack, onViewGame, groups
   const [editName, setEditName] = useState('');
   const [editUsername, setEditUsername] = useState('');
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const load = useCallback(async () => {
     if (!targetUid) return;
@@ -136,6 +139,32 @@ export default function ProfileScreen({ uid: viewUid, onBack, onViewGame, groups
     );
   }
 
+  async function handlePickPhoto() {
+    if (!user) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'Allow photo library access to set a profile picture.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (result.canceled) return;
+    setUploadingPhoto(true);
+    try {
+      const url = await uploadProfilePhoto(user.uid, result.assets[0].uri);
+      await updateUserPhotoURL(user.uid, url);
+      await load();
+    } catch (e: any) {
+      Alert.alert('Error', 'Failed to upload photo. Please try again.');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -168,9 +197,28 @@ export default function ProfileScreen({ uid: viewUid, onBack, onViewGame, groups
             </TouchableOpacity>
           )}
           <View style={styles.profileHeader}>
+            {isOwnProfile ? (
+              <TouchableOpacity onPress={handlePickPhoto} disabled={uploadingPhoto} style={styles.avatar}>
+                {uploadingPhoto ? (
+                  <ActivityIndicator color="#000" size="small" />
+                ) : profile?.photoURL ? (
+                  <Image source={{ uri: profile.photoURL }} style={styles.avatarImage} />
+                ) : (
+                  <Text style={styles.avatarText}>{profile?.displayName.charAt(0).toUpperCase()}</Text>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.avatar}>
+                {profile?.photoURL ? (
+                  <Image source={{ uri: profile.photoURL }} style={styles.avatarImage} />
+                ) : (
+                  <Text style={styles.avatarText}>{profile?.displayName.charAt(0).toUpperCase()}</Text>
+                )}
+              </View>
+            )}
             <View style={{ flex: 1 }}>
               <Text style={styles.displayName}>{profile?.displayName}</Text>
-{h2h && (
+              {h2h && (
                 <Text style={styles.h2hBadge}>
                   vs. You: {h2h.wins}W-{h2h.losses}L
                 </Text>
@@ -300,7 +348,9 @@ const styles = StyleSheet.create({
   avatar: {
     width: 64, height: 64, borderRadius: 32,
     backgroundColor: '#c9a844', justifyContent: 'center', alignItems: 'center',
+    overflow: 'hidden',
   },
+  avatarImage: { width: 64, height: 64, borderRadius: 32 },
   avatarText: { color: '#000', fontWeight: '800', fontSize: 28 },
   displayName: { color: '#fff', fontWeight: '700', fontSize: 22 },
   username: { color: '#888', fontSize: 14 },
