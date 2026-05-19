@@ -13,16 +13,17 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
-import { getAllUsers, getRecentTeammates, logGame } from '../lib/db';
+import { getGroupMembers, getRecentTeammates, logGame } from '../lib/db';
 import { notifyTaggedPlayers } from '../lib/notifications';
-import { User } from '../types';
+import { Group, User } from '../types';
 
 interface Props {
   onSuccess: () => void;
   onBack: () => void;
+  activeGroup: Group;
 }
 
-export default function LogGameScreen({ onSuccess, onBack }: Props) {
+export default function LogGameScreen({ onSuccess, onBack, activeGroup }: Props) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [recentUsers, setRecentUsers] = useState<User[]>([]);
@@ -43,19 +44,19 @@ export default function LogGameScreen({ onSuccess, onBack }: Props) {
 
   useEffect(() => {
     if (!user) return;
+    const otherMemberIds = activeGroup.members.filter((id) => id !== user.uid);
     Promise.all([
       getRecentTeammates(user.uid, 5),
-      getAllUsers(),
-    ]).then(([recent, all]) => {
-      const others = all.filter((u) => u.uid !== user.uid);
-      setAllUsers(others);
-      setRecentUsers(recent.filter((u) => u.uid !== user.uid));
+      getGroupMembers(otherMemberIds),
+    ]).then(([recent, members]) => {
+      setAllUsers(members);
+      setRecentUsers(recent.filter((u) => otherMemberIds.includes(u.uid)));
     }).catch((e) => {
       console.error('LogGame users load error:', e);
     }).finally(() => {
       setUsersLoading(false);
     });
-  }, [user]);
+  }, [user, activeGroup]);
 
   function togglePlayer(uid: string) {
     setSelectedPlayers((prev) =>
