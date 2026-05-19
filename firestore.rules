@@ -4,8 +4,8 @@ service cloud.firestore {
 
     // ── Users ──────────────────────────────────────────────────
     match /users/{userId} {
-      // Any signed-in user can read profiles (needed for leaderboard, player search)
-      allow read: if request.auth != null;
+      // Public read — needed for username uniqueness check during signup
+      allow read: if true;
 
       // Only the user themselves can create their own doc
       allow create: if request.auth != null && request.auth.uid == userId;
