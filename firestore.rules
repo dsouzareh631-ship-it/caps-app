@@ -40,8 +40,10 @@ service cloud.firestore {
         request.auth.uid in resource.data.players
       );
 
-      // Games cannot be deleted
-      allow delete: if false;
+      // Only the logger can delete their own pending game
+      allow delete: if request.auth != null
+        && request.auth.uid == resource.data.userId
+        && resource.data.status == 'pending';
     }
 
     // ── Groups ─────────────────────────────────────────────────
