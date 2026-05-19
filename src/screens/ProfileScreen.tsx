@@ -159,7 +159,7 @@ export default function ProfileScreen({ uid: viewUid, onBack, onViewGame, groups
       await updateUserPhotoURL(user.uid, url);
       await load();
     } catch (e: any) {
-      Alert.alert('Error', 'Failed to upload photo. Please try again.');
+      Alert.alert('Upload failed', e?.message ?? String(e));
     } finally {
       setUploadingPhoto(false);
     }
