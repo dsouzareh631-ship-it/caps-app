@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   FlatList,
+  Image,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -181,8 +182,15 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup, editGame
               style={[styles.playerRow, selected && styles.playerRowSelected]}
               onPress={() => togglePlayer(u.uid)}
             >
-              <Text style={styles.playerName}>{u.displayName}</Text>
-              <Text style={styles.playerUsername}>@{u.username}</Text>
+              <View style={styles.playerAvatar}>
+                {u.photoURL
+                  ? <Image source={{ uri: u.photoURL }} style={styles.playerAvatarImage} />
+                  : <Text style={styles.playerAvatarText}>{u.displayName.charAt(0).toUpperCase()}</Text>}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.playerName}>{u.displayName}</Text>
+                <Text style={styles.playerUsername}>@{u.username}</Text>
+              </View>
               {selected && <Text style={styles.checkmark}>✓</Text>}
             </TouchableOpacity>
           );
@@ -337,7 +345,10 @@ const styles = StyleSheet.create({
     borderColor: '#1e2d6b',
   },
   playerRowSelected: { borderColor: '#c9a844', backgroundColor: '#0d1535' },
-  playerName: { color: '#fff', fontWeight: '600', fontSize: 15, flex: 1 },
+  playerAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#c9a844', justifyContent: 'center', alignItems: 'center', marginRight: 12, overflow: 'hidden' },
+  playerAvatarImage: { width: 36, height: 36, borderRadius: 18 },
+  playerAvatarText: { color: '#000', fontWeight: '800', fontSize: 15 },
+  playerName: { color: '#fff', fontWeight: '600', fontSize: 15 },
   playerUsername: { color: '#888', fontSize: 13, marginRight: 8 },
   checkmark: { color: '#c9a844', fontWeight: '800', fontSize: 16 },
   noPlayersText: { color: '#555', fontSize: 14, textAlign: 'center', marginHorizontal: 16, marginVertical: 12 },

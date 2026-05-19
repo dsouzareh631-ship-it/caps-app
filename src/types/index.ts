@@ -46,6 +46,7 @@ export interface LeaderboardEntry {
   uid: string;
   displayName: string;
   username: string;
+  photoURL?: string;
   totalCaps: number;
   totalGames: number;
   totalWins: number;

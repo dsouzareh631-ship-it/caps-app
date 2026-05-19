@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
@@ -120,8 +121,17 @@ export default function VerificationsScreen({ onBack }: Props) {
           const isActioning = actionLoading === game.id;
           return (
             <View style={styles.card}>
-              <Text style={styles.ownerName}>{owner?.displayName ?? 'Unknown'}</Text>
-              <Text style={styles.ownerUsername}>@{owner?.username ?? '?'}</Text>
+              <View style={styles.ownerRow}>
+                <View style={styles.ownerAvatar}>
+                  {owner?.photoURL
+                    ? <Image source={{ uri: owner.photoURL }} style={styles.ownerAvatarImage} />
+                    : <Text style={styles.ownerAvatarText}>{(owner?.displayName ?? '?').charAt(0).toUpperCase()}</Text>}
+                </View>
+                <View>
+                  <Text style={styles.ownerName}>{owner?.displayName ?? 'Unknown'}</Text>
+                  <Text style={styles.ownerUsername}>@{owner?.username ?? '?'}</Text>
+                </View>
+              </View>
               <View style={styles.statRow}>
                 <Text style={styles.statItem}>{totalCaps} caps</Text>
                 {game.bounces > 0 && <Text style={styles.bounceTag}>{game.bounces} bounce{game.bounces > 1 ? 's' : ''}</Text>}
@@ -179,8 +189,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#1e2d6b',
   },
+  ownerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  ownerAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#c9a844', justifyContent: 'center', alignItems: 'center', marginRight: 12, overflow: 'hidden' },
+  ownerAvatarImage: { width: 40, height: 40, borderRadius: 20 },
+  ownerAvatarText: { color: '#000', fontWeight: '800', fontSize: 17 },
   ownerName: { color: '#fff', fontWeight: '700', fontSize: 17 },
-  ownerUsername: { color: '#888', fontSize: 13, marginBottom: 12 },
+  ownerUsername: { color: '#888', fontSize: 13 },
   statRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
   statItem: { color: '#c9a844', fontWeight: '800', fontSize: 20 },
   bounceTag: { color: '#888', fontSize: 13 },

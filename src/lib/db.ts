@@ -109,6 +109,7 @@ export async function getGroupLeaderboard(memberIds: string[]): Promise<Leaderbo
       uid: userIds[i],
       displayName: user.displayName,
       username: user.username,
+      photoURL: user.photoURL,
       totalCaps: stats.caps,
       totalGames: stats.games,
       totalWins: stats.wins,
@@ -151,6 +152,7 @@ export async function getGroupPeriodLeaderboard(memberIds: string[], since: numb
       uid,
       displayName: user.displayName,
       username: user.username,
+      photoURL: user.photoURL,
       totalCaps: stats.caps,
       totalGames: stats.games,
       totalWins: stats.wins,
@@ -434,6 +436,7 @@ export async function getPeriodLeaderboard(since: number): Promise<LeaderboardEn
       uid,
       displayName: user.displayName,
       username: user.username,
+      photoURL: user.photoURL,
       totalCaps: stats.caps,
       totalGames: stats.games,
       totalWins: stats.wins,
@@ -445,15 +448,22 @@ export async function getPeriodLeaderboard(since: number): Promise<LeaderboardEn
   return entries.sort((a, b) => b.totalCaps - a.totalCaps);
 }
 
+export interface AchievementHolder {
+  username: string;
+  displayName: string;
+  photoURL?: string;
+  total: number;
+}
+
 export interface Achievements {
-  mrRebuttal: { username: string; displayName: string; total: number } | null;
-  bounceMerchant: { username: string; displayName: string; total: number } | null;
-  hotStreak: { username: string; displayName: string; total: number } | null;
-  sharpShooter: { username: string; displayName: string; total: number } | null;
-  ironman: { username: string; displayName: string; total: number } | null;
-  burger: { username: string; displayName: string; total: number } | null;
-  floatMaster: { username: string; displayName: string; total: number } | null;
-  closer: { username: string; displayName: string; total: number } | null;
+  mrRebuttal: AchievementHolder | null;
+  bounceMerchant: AchievementHolder | null;
+  hotStreak: AchievementHolder | null;
+  sharpShooter: AchievementHolder | null;
+  ironman: AchievementHolder | null;
+  burger: AchievementHolder | null;
+  floatMaster: AchievementHolder | null;
+  closer: AchievementHolder | null;
 }
 
 type GroupStats = {
@@ -509,7 +519,7 @@ export async function getAchievements(memberIds: string[]): Promise<Achievements
   async function topFromMap(
     pick: (s: GroupStats) => number,
     minGames = 0
-  ): Promise<{ username: string; displayName: string; total: number } | null> {
+  ): Promise<{ username: string; displayName: string; photoURL?: string; total: number } | null> {
     let bestUid: string | null = null;
     let bestVal = -1;
     for (const [uid, s] of statsMap.entries()) {
@@ -520,7 +530,7 @@ export async function getAchievements(memberIds: string[]): Promise<Achievements
     if (!bestUid || bestVal <= 0) return null;
     const user = await getUser(bestUid);
     if (!user) return null;
-    return { username: user.username, displayName: user.displayName, total: bestVal };
+    return { username: user.username, displayName: user.displayName, photoURL: user.photoURL, total: bestVal };
   }
 
   const [mrRebuttal, bounceMerchant, hotStreak, ironman, burger, sharpShooter, floatMaster, closer] = await Promise.all([
