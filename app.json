@@ -19,7 +19,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0a0f2e"
     },
     "ios": {
       "supportsTablet": false,
@@ -29,7 +29,7 @@
       "package": "com.capsapp.tracker",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#0a0f2e"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
