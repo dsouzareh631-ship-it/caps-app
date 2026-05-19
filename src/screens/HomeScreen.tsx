@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Animated,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
@@ -160,7 +161,12 @@ export default function HomeScreen({ onLogGame, onViewVerifications, onViewGame,
         ListHeaderComponent={
           <>
             <View style={styles.greetingRow}>
-              <View>
+              <View style={styles.greetingAvatar}>
+                {profile?.photoURL
+                  ? <Image source={{ uri: profile.photoURL }} style={styles.greetingAvatarImage} />
+                  : <Text style={styles.greetingAvatarText}>{(profile?.displayName ?? profile?.username ?? '?').charAt(0).toUpperCase()}</Text>}
+              </View>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.greeting}>Hey, {profile?.username ?? user?.email?.split('@')[0]}</Text>
                 <TouchableOpacity onPress={showGroupSwitcher ? onSwitchGroup : undefined} activeOpacity={showGroupSwitcher ? 0.7 : 1}>
                   <Text style={styles.groupName}>{activeGroup.name}{showGroupSwitcher ? ' ▾' : ''}</Text>
@@ -206,7 +212,10 @@ export default function HomeScreen({ onLogGame, onViewVerifications, onViewGame,
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0f2e' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0f2e' },
-  greetingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16 },
+  greetingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16, gap: 12 },
+  greetingAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#c9a844', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  greetingAvatarImage: { width: 44, height: 44, borderRadius: 22 },
+  greetingAvatarText: { color: '#000', fontWeight: '800', fontSize: 18 },
   greeting: { fontSize: 26, fontWeight: '700', color: '#fff' },
   groupName: { fontSize: 13, color: '#c9a844', fontWeight: '600', marginTop: 2 },
   statsRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 10, marginBottom: 20 },
