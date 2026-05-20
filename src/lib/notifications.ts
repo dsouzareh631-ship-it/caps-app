@@ -5,15 +5,19 @@ import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 // Show alerts and play sound when a notification arrives while app is open
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+try {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+} catch (e) {
+  console.warn('Failed to set notification handler:', e);
+}
 
 export async function registerForPushNotifications(userId: string): Promise<void> {
   if (!Device.isDevice) return; // simulators can't receive push notifications

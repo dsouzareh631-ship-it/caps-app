@@ -11,11 +11,13 @@
           "icon": "./assets/icon.png",
           "color": "#c9a844"
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker",
+      "expo-image-picker"
     ],
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
+
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -23,7 +25,11 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.capsapp.tracker"
+      "bundleIdentifier": "com.capsapp.tracker",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Used to set your profile photo.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.capsapp.tracker",
