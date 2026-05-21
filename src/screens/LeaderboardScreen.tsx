@@ -37,6 +37,32 @@ const TAB_LABELS: Record<Tab, string> = {
   achievements: 'Achievements',
 };
 
+function AchievementCard({ badge, label, desc, stat, holder }: {
+  badge: string;
+  label: string;
+  desc: string;
+  stat: string;
+  holder: { photoURL?: string; displayName: string; username: string };
+}) {
+  return (
+    <View style={styles.achievementCard}>
+      <Text style={styles.achievementBadge}>{badge}</Text>
+      <View style={styles.achievementInfo}>
+        <View style={styles.achievementTop}>
+          <Text style={styles.achievementLabel}>{label}</Text>
+          <Text style={styles.achievementStat}>{stat}</Text>
+        </View>
+        <Text style={styles.achievementDesc}>{desc}</Text>
+        <View style={styles.achievementUserRow}>
+          <Avatar photoURL={holder.photoURL} displayName={holder.displayName} size={22} />
+          <Text style={styles.achievementUser}>{holder.displayName}</Text>
+          <Text style={styles.achievementUsername}>@{holder.username}</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 interface Props {
   onViewPlayer?: (uid: string) => void;
   activeGroup: Group;
@@ -117,102 +143,14 @@ export default function LeaderboardScreen({ onViewPlayer, activeGroup, allGroups
           contentContainerStyle={{ padding: 16 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#c9a844" />}
         >
-          {achievements?.mrRebuttal ? (
-            <View style={styles.achievementCard}>
-              <Text style={styles.achievementBadge}>🏅</Text>
-              <Avatar photoURL={achievements.mrRebuttal.photoURL} displayName={achievements.mrRebuttal.displayName} size={36} />
-              <View style={styles.achievementInfo}>
-                <Text style={styles.achievementLabel}>Mr. Rebuttal</Text>
-                <Text style={styles.achievementDesc}>Most rebuttal caps across all games</Text>
-                <Text style={styles.achievementUser}>@{achievements.mrRebuttal.username}</Text>
-              </View>
-              <Text style={styles.achievementStat}>{achievements.mrRebuttal.total}</Text>
-            </View>
-          ) : null}
-          {achievements?.bounceMerchant ? (
-            <View style={styles.achievementCard}>
-              <Text style={styles.achievementBadge}>🏀</Text>
-              <Avatar photoURL={achievements.bounceMerchant.photoURL} displayName={achievements.bounceMerchant.displayName} size={36} />
-              <View style={styles.achievementInfo}>
-                <Text style={styles.achievementLabel}>Bounce Merchant</Text>
-                <Text style={styles.achievementDesc}>Most caps scored via bounce</Text>
-                <Text style={styles.achievementUser}>@{achievements.bounceMerchant.username}</Text>
-              </View>
-              <Text style={styles.achievementStat}>{achievements.bounceMerchant.total}</Text>
-            </View>
-          ) : null}
-          {achievements?.hotStreak ? (
-            <View style={styles.achievementCard}>
-              <Text style={styles.achievementBadge}>🔥</Text>
-              <Avatar photoURL={achievements.hotStreak.photoURL} displayName={achievements.hotStreak.displayName} size={36} />
-              <View style={styles.achievementInfo}>
-                <Text style={styles.achievementLabel}>Hot Streak</Text>
-                <Text style={styles.achievementDesc}>Longest active win streak right now</Text>
-                <Text style={styles.achievementUser}>@{achievements.hotStreak.username}</Text>
-              </View>
-              <Text style={styles.achievementStat}>{achievements.hotStreak.total} W</Text>
-            </View>
-          ) : null}
-          {achievements?.sharpShooter ? (
-            <View style={styles.achievementCard}>
-              <Text style={styles.achievementBadge}>🎯</Text>
-              <Avatar photoURL={achievements.sharpShooter.photoURL} displayName={achievements.sharpShooter.displayName} size={36} />
-              <View style={styles.achievementInfo}>
-                <Text style={styles.achievementLabel}>Sharp Shooter</Text>
-                <Text style={styles.achievementDesc}>Best caps per game (min. 3 games)</Text>
-                <Text style={styles.achievementUser}>@{achievements.sharpShooter.username}</Text>
-              </View>
-              <Text style={styles.achievementStat}>{achievements.sharpShooter.total} CPG</Text>
-            </View>
-          ) : null}
-          {achievements?.ironman ? (
-            <View style={styles.achievementCard}>
-              <Text style={styles.achievementBadge}>💪</Text>
-              <Avatar photoURL={achievements.ironman.photoURL} displayName={achievements.ironman.displayName} size={36} />
-              <View style={styles.achievementInfo}>
-                <Text style={styles.achievementLabel}>Ironman</Text>
-                <Text style={styles.achievementDesc}>Most total games played</Text>
-                <Text style={styles.achievementUser}>@{achievements.ironman.username}</Text>
-              </View>
-              <Text style={styles.achievementStat}>{achievements.ironman.total} G</Text>
-            </View>
-          ) : null}
-          {achievements?.burger ? (
-            <View style={styles.achievementCard}>
-              <Text style={styles.achievementBadge}>🍔</Text>
-              <Avatar photoURL={achievements.burger.photoURL} displayName={achievements.burger.displayName} size={36} />
-              <View style={styles.achievementInfo}>
-                <Text style={styles.achievementLabel}>Burger</Text>
-                <Text style={styles.achievementDesc}>Most total losses</Text>
-                <Text style={styles.achievementUser}>@{achievements.burger.username}</Text>
-              </View>
-              <Text style={styles.achievementStat}>{achievements.burger.total} L</Text>
-            </View>
-          ) : null}
-          {achievements?.floatMaster ? (
-            <View style={styles.achievementCard}>
-              <Text style={styles.achievementBadge}>🫧</Text>
-              <Avatar photoURL={achievements.floatMaster.photoURL} displayName={achievements.floatMaster.displayName} size={36} />
-              <View style={styles.achievementInfo}>
-                <Text style={styles.achievementLabel}>Cloud Nine</Text>
-                <Text style={styles.achievementDesc}>Most caps scored via floater</Text>
-                <Text style={styles.achievementUser}>@{achievements.floatMaster.username}</Text>
-              </View>
-              <Text style={styles.achievementStat}>{achievements.floatMaster.total}</Text>
-            </View>
-          ) : null}
-          {achievements?.closer ? (
-            <View style={styles.achievementCard}>
-              <Text style={styles.achievementBadge}>🏁</Text>
-              <Avatar photoURL={achievements.closer.photoURL} displayName={achievements.closer.displayName} size={36} />
-              <View style={styles.achievementInfo}>
-                <Text style={styles.achievementLabel}>LeBron</Text>
-                <Text style={styles.achievementDesc}>Most game winners scored</Text>
-                <Text style={styles.achievementUser}>@{achievements.closer.username}</Text>
-              </View>
-              <Text style={styles.achievementStat}>{achievements.closer.total}</Text>
-            </View>
-          ) : null}
+          {achievements?.mrRebuttal && <AchievementCard badge="🏅" label="Mr. Rebuttal" desc="Most rebuttal caps across all games" stat={String(achievements.mrRebuttal.total)} holder={achievements.mrRebuttal} />}
+          {achievements?.bounceMerchant && <AchievementCard badge="🏀" label="Bounce Merchant" desc="Most caps scored via bounce" stat={String(achievements.bounceMerchant.total)} holder={achievements.bounceMerchant} />}
+          {achievements?.hotStreak && <AchievementCard badge="🔥" label="Hot Streak" desc="Longest active win streak right now" stat={`${achievements.hotStreak.total} W`} holder={achievements.hotStreak} />}
+          {achievements?.sharpShooter && <AchievementCard badge="🎯" label="Sharp Shooter" desc="Best caps per game (min. 3 games)" stat={`${achievements.sharpShooter.total} CPG`} holder={achievements.sharpShooter} />}
+          {achievements?.ironman && <AchievementCard badge="💪" label="Ironman" desc="Most total games played" stat={`${achievements.ironman.total} G`} holder={achievements.ironman} />}
+          {achievements?.burger && <AchievementCard badge="🍔" label="Burger" desc="Most total losses" stat={`${achievements.burger.total} L`} holder={achievements.burger} />}
+          {achievements?.floatMaster && <AchievementCard badge="🫧" label="Cloud Nine" desc="Most caps scored via floater" stat={String(achievements.floatMaster.total)} holder={achievements.floatMaster} />}
+          {achievements?.closer && <AchievementCard badge="🏁" label="LeBron" desc="Most game winners scored" stat={String(achievements.closer.total)} holder={achievements.closer} />}
           {!achievements?.mrRebuttal && !achievements?.bounceMerchant && !achievements?.hotStreak && (
             <Text style={styles.emptyText}>No achievements yet. Log some games!</Text>
           )}
@@ -302,18 +240,21 @@ const styles = StyleSheet.create({
   emptyText: { color: '#555', textAlign: 'center', marginTop: 60, fontSize: 15 },
   achievementCard: {
     backgroundColor: '#111d4a',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 14,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     borderWidth: 1,
     borderColor: '#c9a844',
   },
-  achievementBadge: { fontSize: 32, marginRight: 14 },
+  achievementBadge: { fontSize: 30, marginRight: 14, marginTop: 2 },
   achievementInfo: { flex: 1 },
+  achievementTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   achievementLabel: { color: '#c9a844', fontWeight: '800', fontSize: 16 },
-  achievementDesc: { color: '#aaa', fontSize: 12, marginTop: 2 },
-  achievementUser: { color: '#555', fontSize: 12, marginTop: 4 },
-  achievementStat: { color: '#fff', fontWeight: '700', fontSize: 20 },
+  achievementStat: { color: '#fff', fontWeight: '700', fontSize: 18 },
+  achievementDesc: { color: '#aaa', fontSize: 12, marginBottom: 10 },
+  achievementUserRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  achievementUser: { color: '#fff', fontWeight: '600', fontSize: 13 },
+  achievementUsername: { color: '#555', fontSize: 12 },
 });
