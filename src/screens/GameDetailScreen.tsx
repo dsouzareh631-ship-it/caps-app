@@ -70,7 +70,7 @@ export default function GameDetailScreen({ gameId, onBack, onViewPlayer, onEdit 
         <Text style={[styles.statusBadge, game.status === 'verified' ? styles.verified : game.status === 'pending' ? styles.pending : styles.rejected]}>
           {game.status.toUpperCase()}
         </Text>
-        {user?.uid === game.userId && game.status === 'pending' && (
+        {user?.uid === game.userId && game.status !== 'verified' && (
           <View style={styles.actionRow}>
             <TouchableOpacity style={styles.editButton} onPress={() => onEdit?.(gameId)}>
               <Text style={styles.editButtonText}>Edit</Text>

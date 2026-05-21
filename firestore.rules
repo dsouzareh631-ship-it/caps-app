@@ -43,7 +43,7 @@ service cloud.firestore {
       // Only the logger can delete their own pending game
       allow delete: if request.auth != null
         && request.auth.uid == resource.data.userId
-        && resource.data.status == 'pending';
+        && resource.data.status in ['pending', 'rejected'];
     }
 
     // ── Groups ─────────────────────────────────────────────────

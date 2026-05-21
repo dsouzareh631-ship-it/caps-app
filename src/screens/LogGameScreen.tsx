@@ -77,9 +77,7 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup, editGame
   }, [editGameId, user]);
 
   function togglePlayer(uid: string) {
-    setSelectedPlayers((prev) =>
-      prev.includes(uid) ? prev.filter((p) => p !== uid) : prev.length < 3 ? [...prev, uid] : prev
-    );
+    setSelectedPlayers((prev) => prev.includes(uid) ? [] : [uid]);
   }
 
   function parseNonNegativeInt(val: string): number | null {
@@ -92,7 +90,7 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup, editGame
   async function handleSubmit() {
     if (!user) return;
     if (selectedPlayers.length === 0) {
-      Alert.alert('Error', 'Select at least one other player.');
+      Alert.alert('Error', 'Select an opponent to verify your game.');
       return;
     }
     const capsVal = parseNonNegativeInt(capsMade);
@@ -153,11 +151,11 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup, editGame
       </View>
 
       {/* Player Selection */}
-      <Text style={styles.sectionLabel}>Teammates / Opponents</Text>
+      <Text style={styles.sectionLabel}>Opponent</Text>
       <Text style={styles.sectionHint}>
         {selectedPlayers.length === 0
-          ? 'Select 1–3 players — they\'ll receive a verification request'
-          : `${selectedPlayers.length} selected${selectedPlayers.length < 3 ? ' — tap to add more' : ' — max reached'}`}
+          ? 'Select your opponent — they\'ll verify your stats'
+          : 'Opponent selected — tap to change'}
       </Text>
       <TextInput
         style={styles.searchInput}

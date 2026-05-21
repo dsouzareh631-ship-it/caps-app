@@ -275,7 +275,7 @@ export async function updateGame(
 ): Promise<void> {
   await updateDoc(doc(db, 'games', gameId), {
     userId, players, capsMade, bounces, rebuttals, floaters, gameWinners,
-    result, notes, date, approvals: [], rejections: [],
+    result, notes, date, approvals: [], rejections: [], status: 'pending',
   });
 }
 

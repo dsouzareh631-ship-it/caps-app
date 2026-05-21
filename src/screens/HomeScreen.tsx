@@ -48,7 +48,7 @@ function GameRow({ game }: { game: Game }) {
         <Text style={[styles.gameResult, game.result === 'win' ? styles.win : styles.loss]}>
           {game.result.toUpperCase()}
         </Text>
-        <Text style={[styles.gameStatus, game.status === 'pending' ? styles.pending : styles.verified]}>
+        <Text style={[styles.gameStatus, game.status === 'pending' ? styles.pending : game.status === 'rejected' ? styles.rejected : styles.verified]}>
           {game.status}
         </Text>
       </View>
@@ -276,5 +276,6 @@ const styles = StyleSheet.create({
   gameStatus: { fontSize: 11, fontWeight: '600' },
   pending: { color: '#888' },
   verified: { color: '#4caf50' },
+  rejected: { color: '#f44336' },
   emptyText: { color: '#555', textAlign: 'center', marginTop: 30, fontSize: 15 },
 });
