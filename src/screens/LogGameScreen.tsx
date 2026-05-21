@@ -192,7 +192,8 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup, editGame
               </View>
               {selected && <Text style={styles.checkmark}>✓</Text>}
             </TouchableOpacity>
-          ))}
+          );
+        })}
         </>
       )}
 
