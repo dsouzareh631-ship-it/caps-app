@@ -17,7 +17,12 @@
     ],
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-
+    "updates": {
+      "url": "https://u.expo.dev/da752448-0c00-40c5-8535-dc4bdf60d765"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
