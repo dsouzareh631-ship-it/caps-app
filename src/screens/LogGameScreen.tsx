@@ -90,7 +90,7 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup, editGame
   async function handleSubmit() {
     if (!user) return;
     if (selectedPlayers.length === 0) {
-      Alert.alert('Error', 'Select an opponent to verify your game.');
+      Alert.alert('Error', 'Select a teammate to verify your game.');
       return;
     }
     const capsVal = parseNonNegativeInt(capsMade);
@@ -151,11 +151,11 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup, editGame
       </View>
 
       {/* Player Selection */}
-      <Text style={styles.sectionLabel}>Opponent</Text>
+      <Text style={styles.sectionLabel}>Teammate</Text>
       <Text style={styles.sectionHint}>
         {selectedPlayers.length === 0
-          ? 'Select your opponent — they\'ll verify your stats'
-          : 'Opponent selected — tap to change'}
+          ? 'Select your teammate — they\'ll verify your stats'
+          : 'Teammate selected — tap to change'}
       </Text>
       <TextInput
         style={styles.searchInput}
