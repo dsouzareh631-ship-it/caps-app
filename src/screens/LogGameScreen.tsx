@@ -133,13 +133,14 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup, editGame
     }
   }
 
+  const isShowingRecent = !search.trim() && recentUsers.length > 0;
   const filtered = search.trim()
     ? allUsers.filter(
         (u) =>
           (u.displayName ?? '').toLowerCase().includes(search.toLowerCase()) ||
           (u.username ?? '').toLowerCase().includes(search.toLowerCase())
       )
-    : recentUsers;
+    : recentUsers.length > 0 ? recentUsers : allUsers;
 
   return (
     <ScrollView style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]} keyboardShouldPersistTaps="handled">
@@ -172,7 +173,11 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup, editGame
       ) : filtered.length === 0 && search.trim() ? (
         <Text style={styles.noPlayersText}>No players found.</Text>
       ) : (
-        filtered.map((u) => {
+        <>
+          {!search.trim() && (
+            <Text style={styles.listHeader}>{isShowingRecent ? 'Recent teammates' : 'Group members'}</Text>
+          )}
+          {filtered.map((u) => {
           const selected = selectedPlayers.includes(u.uid);
           return (
             <TouchableOpacity
@@ -187,8 +192,8 @@ export default function LogGameScreen({ onSuccess, onBack, activeGroup, editGame
               </View>
               {selected && <Text style={styles.checkmark}>✓</Text>}
             </TouchableOpacity>
-          );
-        })
+          ))}
+        </>
       )}
 
       {/* Caps Made */}
@@ -343,6 +348,7 @@ const styles = StyleSheet.create({
   playerUsername: { color: '#888', fontSize: 13, marginRight: 8 },
   checkmark: { color: '#c9a844', fontWeight: '800', fontSize: 16 },
   noPlayersText: { color: '#555', fontSize: 14, textAlign: 'center', marginHorizontal: 16, marginVertical: 12 },
+  listHeader: { color: '#555', fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, paddingHorizontal: 20, marginBottom: 8 },
   input: {
     backgroundColor: '#111d4a',
     color: '#fff',
