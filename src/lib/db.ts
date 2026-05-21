@@ -332,24 +332,32 @@ export async function approveGame(gameId: string, approverId: string) {
   });
 }
 
-export async function rejectGame(gameId: string, rejectorId: string) {
+export async function rejectGame(gameId: string, rejectorId: string): Promise<boolean> {
   const gameRef = doc(db, 'games', gameId);
-  const snap = await getDoc(gameRef);
-  if (!snap.exists()) return;
+  let fullyRejected = false;
 
-  const game = snap.data() as Game;
-  if (game.status !== 'pending') return;
-  if (rejectorId === game.userId) return;
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(gameRef);
+    if (!snap.exists()) return;
 
-  const newRejections = [...game.rejections, rejectorId];
-  // Reject only if all tagged players (excluding the logger) have rejected
-  const otherPlayers = game.players.filter((p) => p !== game.userId);
-  const allRejected = otherPlayers.every((p) => newRejections.includes(p));
+    const game = snap.data() as Game;
+    if (game.status !== 'pending') return;
+    if (rejectorId === game.userId) return;
+    if (game.rejections.includes(rejectorId)) return;
 
-  await updateDoc(gameRef, {
-    rejections: arrayUnion(rejectorId),
-    ...(allRejected ? { status: 'rejected' } : {}),
+    const newRejections = [...game.rejections, rejectorId];
+    const otherPlayers = game.players.filter((p) => p !== game.userId);
+    const allRejected = otherPlayers.every((p) => newRejections.includes(p));
+
+    tx.update(gameRef, {
+      rejections: arrayUnion(rejectorId),
+      ...(allRejected ? { status: 'rejected' } : {}),
+    });
+
+    fullyRejected = allRejected;
   });
+
+  return fullyRejected;
 }
 
 export async function getUserGames(userId: string): Promise<Game[]> {

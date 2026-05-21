@@ -79,8 +79,8 @@ export default function VerificationsScreen({ onBack }: Props) {
           setActionLoading(gameId);
           try {
             const item = items.find((i) => i.game.id === gameId);
-            await rejectGame(gameId, user.uid);
-            if (item) notifyGameRejected(item.game.userId, user.uid);
+            const fullyRejected = await rejectGame(gameId, user.uid);
+            if (fullyRejected && item) notifyGameRejected(item.game.userId, user.uid);
             await load();
           } catch (e: any) {
             Alert.alert('Error', e.message);
