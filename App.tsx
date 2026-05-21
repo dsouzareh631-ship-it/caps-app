@@ -139,25 +139,27 @@ export default function App() {
   const [groupsLoading, setGroupsLoading] = useState(true);
   const [showGroupSwitcher, setShowGroupSwitcher] = useState(false);
 
+  const uid = user?.uid;
+
   const loadGroups = useCallback(async () => {
-    if (!user) return;
+    if (!uid) return;
     setGroupsLoading(true);
     try {
-      const g = await getUserGroups(user.uid);
+      const g = await getUserGroups(uid);
       setGroups(g);
     } finally {
       setGroupsLoading(false);
     }
-  }, [user]);
+  }, [uid]);
 
   useEffect(() => {
-    if (user) {
+    if (uid) {
       loadGroups();
-      registerForPushNotifications(user.uid);
+      registerForPushNotifications(uid);
     } else {
       setGroupsLoading(false);
     }
-  }, [user, loadGroups]);
+  }, [uid, loadGroups]);
 
   if (loading || groupsLoading) {
     return (
